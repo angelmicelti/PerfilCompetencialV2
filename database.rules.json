@@ -1,0 +1,28 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "nivelesCompetencialesIESvdv": {
+      "users": {
+        ".read": "auth != null && root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador'",
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador')",
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && !root.child('nivelesCompetencialesIESvdv/users').exists()) || root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador')",
+          "password": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
+      },
+      "_centros": {
+        ".read": "auth != null && (root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'usuario' || root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador')",
+        ".write": "auth != null && root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador'"
+      },
+      "$centro": {
+        "grupos": {
+          ".read": "auth != null && (root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'usuario' || root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador')",
+          ".write": "auth != null && root.child('nivelesCompetencialesIESvdv/users').child(auth.uid).child('role').val() === 'administrador'"
+        }
+      }
+    }
+  }
+}

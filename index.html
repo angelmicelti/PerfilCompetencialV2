@@ -1,0 +1,2940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Perfil Competencial LOMLOE · IES</title>
+<meta name="description" content="Evaluación del perfil competencial del alumnado (LOMLOE) a partir de informes Séneca. PWA con acceso por usuario y contraseña, Firebase y sincronización automática.">
+<meta name="theme-color" content="#0b1f4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Competencias">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+/* ============ DESIGN TOKENS ============ */
+:root{
+  --bg:#eef2f7; --card:#ffffff; --card-2:#f7f9fc; --text:#0f172a; --muted:#5b6b82;
+  --border:#e3e9f2; --border-2:#d4dde9;
+  --primary:#1d4ed8; --primary-strong:#1e40af; --primary-soft:#e8effd; --on-primary:#fff;
+  --navy:#0b1f4b; --navy-2:#13306d; --sidebar-text:#c9d7f5; --sidebar-active:#ffffff;
+  --in:#dc2626; --su:#ea580c; --bi:#d97706; --nt:#65a30d; --sb:#059669;
+  --ok:#059669; --warn:#d97706; --danger:#dc2626;
+  --radius:14px; --radius-sm:10px;
+  --shadow:0 1px 2px rgba(15,23,42,.05), 0 10px 28px -14px rgba(15,23,42,.22);
+  --shadow-lg:0 24px 60px -20px rgba(11,31,75,.45);
+  --sidebar-w:252px; --topbar-h:60px;
+}
+[data-theme="dark"]{
+  --bg:#0b1220; --card:#121b30; --card-2:#0f1728; --text:#e7edf9; --muted:#8fa1bd;
+  --border:#22304d; --border-2:#2c3c5e;
+  --primary:#3b82f6; --primary-strong:#60a5fa; --primary-soft:#17264a; --on-primary:#fff;
+  --navy:#0a1730; --navy-2:#0e2247;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.6);
+  --shadow-lg:0 24px 60px -20px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button{font:inherit; color:inherit; cursor:pointer; border:none; background:none; padding:0}
+input,select,textarea{font:inherit; color:var(--text)}
+h1,h2,h3,h4{margin:0; line-height:1.25; font-weight:700}
+a{color:var(--primary); text-decoration:none}
+svg{display:block; flex:none}
+::selection{background:var(--primary); color:#fff}
+
+/* ============ PANTALLA DE ACCESO ============ */
+#loginView{
+  position:fixed; inset:0; z-index:300; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:20px; overflow:auto;
+  background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 55%,#1e3a8a 100%);
+}
+.login-bg{position:absolute; inset:0; overflow:hidden; pointer-events:none}
+.login-bg::before,.login-bg::after{
+  content:""; position:absolute; border-radius:50%; filter:blur(10px); opacity:.16;
+}
+.login-bg::before{width:520px;height:520px; background:#3b82f6; top:-180px; right:-120px}
+.login-bg::after{width:420px;height:420px; background:#60a5fa; bottom:-160px; left:-120px}
+.login-card{
+  position:relative; width:min(420px,100%); background:var(--card); border:1px solid var(--border);
+  border-radius:20px; box-shadow:var(--shadow-lg); padding:30px 28px 24px; animation:dlgIn .3s cubic-bezier(.34,1.3,.64,1);
+}
+.login-logo{
+  width:58px;height:58px;border-radius:16px; margin:0 auto 12px;
+  background:linear-gradient(135deg,#2563eb,#0b1f4b);
+  display:flex;align-items:center;justify-content:center; color:#fff;
+  box-shadow:0 12px 28px -8px rgba(37,99,235,.6);
+}
+.login-card h1{font-size:21px; text-align:center}
+.login-sub{text-align:center; color:var(--muted); font-size:13px; margin:4px 0 18px}
+.login-tabs{display:flex; background:var(--card-2); border:1px solid var(--border); border-radius:12px; padding:4px; gap:4px; margin-bottom:18px}
+.ltab{flex:1; text-align:center; padding:8px 10px; border-radius:9px; font-weight:600; font-size:13.5px; color:var(--muted); transition:all .15s}
+.ltab.active{background:var(--primary); color:#fff; box-shadow:0 4px 10px -4px rgba(29,78,216,.5)}
+.login-error{
+  margin:12px 0 0; padding:9px 12px; border-radius:10px; font-size:12.5px; font-weight:600;
+  background:#fee2e2; color:#991b1b; border:1px solid #fecaca;
+}
+[data-theme="dark"] .login-error{background:#450a0a; color:#fca5a5; border-color:#7f1d1d}
+.login-foot{text-align:center; margin-top:12px}
+.linkbtn{color:var(--primary); font-size:12.5px; font-weight:600}
+.linkbtn:hover{text-decoration:underline}
+.login-copy{position:relative; color:rgba(255,255,255,.55); font-size:11.5px; margin-top:18px; text-align:center}
+.uidbox{
+  display:flex; align-items:center; gap:10px; background:var(--card-2); border:1px dashed var(--border-2);
+  border-radius:11px; padding:10px 12px;
+}
+.uidbox code{flex:1; font-size:12px; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ============ LAYOUT ============ */
+#app{display:flex; min-height:100vh}
+#sidebar{
+  width:var(--sidebar-w); position:fixed; inset:0 auto 0 0; z-index:60;
+  background:linear-gradient(180deg,var(--navy) 0%,var(--navy-2) 100%);
+  color:var(--sidebar-text); display:flex; flex-direction:column;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+.brand{display:flex; align-items:center; gap:11px; padding:18px 16px 14px}
+.brand .logo{
+  width:40px;height:40px;border-radius:12px;flex:none;
+  background:linear-gradient(135deg,#2563eb,#1e40af);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px -6px rgba(37,99,235,.7);
+}
+.brand b{color:#fff; font-size:15.5px; letter-spacing:.2px; display:block; line-height:1.2}
+.brand small{font-size:11.5px; opacity:.75; letter-spacing:.4px; text-transform:uppercase}
+#nav{padding:6px 12px; display:flex; flex-direction:column; gap:2px; flex:1; overflow:auto}
+.navitem{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px;
+  color:var(--sidebar-text); font-weight:500; font-size:14px; width:100%; text-align:left;
+  transition:background .15s,color .15s;
+}
+.navitem:hover{background:rgba(255,255,255,.08); color:#fff}
+.navitem.active{background:rgba(255,255,255,.14); color:var(--sidebar-active); font-weight:600}
+.navitem.active svg{color:#7fb0ff}
+.navitem svg{opacity:.9}
+.sidebar-foot{padding:14px 16px 16px; border-top:1px solid rgba(255,255,255,.09); font-size:12px}
+.cloudpill{
+  display:flex; align-items:center; gap:8px; font-size:12px; color:#c9d7f5;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  padding:7px 10px; border-radius:99px; margin-bottom:10px; width:100%; text-align:left;
+}
+.cloudpill .dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:none}
+.cloudpill.ok .dot{background:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+.cloudpill.warn .dot{background:#fbbf24; box-shadow:0 0 0 3px rgba(251,191,36,.2)}
+.cloudpill.err .dot{background:#f87171; box-shadow:0 0 0 3px rgba(248,113,113,.2)}
+.ver{opacity:.55; font-size:11px}
+
+#main{flex:1; margin-left:var(--sidebar-w); display:flex; flex-direction:column; min-width:0; min-height:100vh}
+#topbar{
+  position:sticky; top:0; z-index:50; height:var(--topbar-h);
+  display:flex; align-items:center; gap:10px; padding:0 18px;
+  background:color-mix(in srgb, var(--card) 82%, transparent);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+#menuBtn{display:none}
+.iconbtn{
+  width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted); transition:background .15s,color .15s; flex:none;
+}
+.iconbtn:hover{background:var(--primary-soft); color:var(--primary)}
+#topTitle{font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.groupchip{
+  display:inline-flex; align-items:center; gap:7px; max-width:280px; overflow:hidden;
+  background:var(--primary-soft); color:var(--primary-strong); font-weight:600; font-size:12.5px;
+  border:1px solid color-mix(in srgb,var(--primary) 25%,transparent);
+  padding:5px 11px; border-radius:99px; white-space:nowrap; text-overflow:ellipsis;
+}
+.groupchip svg{flex:none}
+.top-actions{margin-left:auto; display:flex; align-items:center; gap:6px}
+#syncChip{
+  display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
+  color:var(--muted); padding:7px 11px; border-radius:99px; border:1px solid var(--border);
+  background:var(--card); max-width:220px; white-space:nowrap; overflow:hidden;
+}
+#syncChip .dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:none}
+#syncChip.ok .dot{background:var(--ok)} #syncChip.warn .dot{background:var(--warn)}
+#syncChip.err .dot{background:var(--danger)}
+.userchip{
+  display:inline-flex; align-items:center; gap:8px; padding:5px 11px 5px 5px; border-radius:99px;
+  border:1px solid var(--border); background:var(--card); transition:border-color .15s; max-width:230px;
+}
+.userchip:hover{border-color:var(--border-2)}
+.uc-avatar{
+  width:28px;height:28px;border-radius:50%; flex:none;
+  background:linear-gradient(135deg,#2563eb,#1e40af); color:#fff;
+  display:flex;align-items:center;justify-content:center; font-size:11px; font-weight:800;
+}
+.uc-info{min-width:0; text-align:left}
+.uc-info b{display:block; font-size:11.5px; line-height:1.15; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.uc-info small{display:block; font-size:9.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-weight:700}
+.uc-info small.es-admin{color:var(--primary-strong)}
+#views{flex:1; padding:22px 22px 40px; max-width:1280px; width:100%; margin:0 auto}
+.view{display:none; animation:fadeIn .25s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+.pagehead{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:18px}
+.pagehead h2{font-size:21px}
+.pagehead .sub{color:var(--muted); font-size:13.5px; margin-top:3px}
+.pagehead .head-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+
+/* ============ BOTONES ============ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:9px 15px; border-radius:11px; font-weight:600; font-size:13.5px;
+  border:1px solid var(--border); background:var(--card); color:var(--text);
+  transition:all .15s; white-space:nowrap; user-select:none;
+}
+.btn:hover{border-color:var(--border-2); box-shadow:var(--shadow)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--primary); border-color:var(--primary); color:var(--on-primary)}
+.btn-primary:hover{background:var(--primary-strong); border-color:var(--primary-strong)}
+.btn-danger{background:var(--danger); border-color:var(--danger); color:#fff}
+.btn-danger:hover{filter:brightness(.94)}
+.btn-soft{background:var(--primary-soft); border-color:transparent; color:var(--primary-strong)}
+.btn-soft:hover{border-color:color-mix(in srgb,var(--primary) 30%,transparent)}
+.btn-sm{padding:6px 11px; font-size:12.5px; border-radius:9px}
+.btn-icon{padding:8px; border-radius:10px}
+.btn[disabled]{opacity:.5; pointer-events:none}
+
+/* ============ CARDS / GRID ============ */
+.card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.grid-cursos{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px}
+.curso-card{padding:16px; display:flex; flex-direction:column; gap:10px; transition:transform .15s, box-shadow .15s; position:relative}
+.curso-card:hover{transform:translateY(-2px); box-shadow:0 4px 8px rgba(15,23,42,.06),0 18px 36px -16px rgba(15,23,42,.28)}
+.curso-card h3{font-size:16px}
+.curso-card .meta{color:var(--muted); font-size:12.5px; display:flex; flex-direction:column; gap:3px}
+.curso-card .meta span{display:flex; align-items:center; gap:6px}
+.curso-card .actions{display:flex; gap:6px; margin-top:2px; flex-wrap:wrap}
+.curso-card .flag{
+  position:absolute; top:12px; right:12px; font-size:10.5px; font-weight:700; letter-spacing:.4px;
+  padding:3px 8px; border-radius:99px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;
+}
+[data-theme="dark"] .curso-card .flag{background:#052e26; color:#6ee7b7; border-color:#065f46}
+.empty-hero{
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px;
+  padding:52px 24px; max-width:640px; margin:14px auto 0;
+}
+.empty-hero .big{
+  width:84px;height:84px;border-radius:24px; display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#2563eb,#1e40af); color:#fff;
+  box-shadow:0 16px 40px -12px rgba(37,99,235,.55);
+}
+.steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; width:100%; margin-top:8px}
+.step{background:var(--card-2); border:1px dashed var(--border-2); border-radius:12px; padding:12px 14px; text-align:left; font-size:12.5px; color:var(--muted)}
+.step b{display:flex; align-items:center; gap:7px; color:var(--text); font-size:13px; margin-bottom:4px}
+.step .n{width:20px;height:20px;border-radius:7px;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+
+/* ============ FORM ============ */
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px}
+.field label{font-size:12.5px; font-weight:600; color:var(--muted)}
+.inp, select.inp, textarea.inp{
+  width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--border-2);
+  background:var(--card); outline:none; transition:border .15s, box-shadow .15s; font-size:14px;
+}
+.inp:focus{border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 18%,transparent)}
+textarea.inp{resize:vertical; min-height:90px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; line-height:1.55}
+.search{position:relative}
+.search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted)}
+.search .inp{padding-left:36px}
+
+
+/* ============ PASTILLAS DE NIVEL ============ */
+.pill{
+  display:inline-flex; align-items:center; justify-content:center; min-width:34px;
+  padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:800; letter-spacing:.5px;
+  color:#fff; line-height:1.5; font-variant-numeric:tabular-nums;
+}
+.pill.lvl-IN{background:var(--in)} .pill.lvl-SU{background:var(--su)}
+.pill.lvl-BI{background:var(--bi)} .pill.lvl-NT{background:var(--nt)}
+.pill.lvl-SB{background:var(--sb)}
+.pill.lvl-NA{background:#94a3b8}
+.pill.big{font-size:13px; padding:4px 13px}
+.pill.sm{font-size:10px; padding:1px 7px; min-width:26px}
+.media-num{font-size:10.5px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums}
+
+/* ============ MATRIZ RESUMEN ============ */
+.toolbar-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+.toolbar-row .search{flex:1; min-width:200px; max-width:340px}
+.toolbar-row .count{color:var(--muted); font-size:12.5px; font-weight:600}
+.table-wrap{
+  overflow:auto; background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+  max-height:calc(100vh - 250px);
+}
+table.mx{border-collapse:separate; border-spacing:0; width:100%; font-size:13px}
+table.mx th, table.mx td{padding:0; border-bottom:1px solid var(--border); white-space:nowrap}
+table.mx thead th{
+  position:sticky; top:0; z-index:5; background:var(--card-2);
+  font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted);
+  padding:10px 10px; border-bottom:1px solid var(--border-2); text-align:center;
+}
+table.mx thead th.th-alu{text-align:left; left:0; z-index:7; position:sticky; min-width:190px}
+table.mx thead th .compdot{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:baseline}
+table.mx tbody td{background:var(--card)}
+table.mx td.c-alu{
+  position:sticky; left:0; z-index:3; text-align:left; padding:6px 12px; font-weight:600;
+  max-width:230px; overflow:hidden; text-overflow:ellipsis; border-right:1px solid var(--border);
+  box-shadow:6px 0 8px -6px rgba(15,23,42,.10);
+}
+[data-theme="dark"] table.mx td.c-alu{box-shadow:6px 0 8px -6px rgba(0,0,0,.5)}
+table.mx td.c-alu:hover{color:var(--primary); cursor:pointer}
+table.mx td.c-alu .alu-sub{display:block; font-size:10.5px; color:var(--muted); font-weight:500}
+table.mx td.c-cell{text-align:center; padding:5px 6px}
+.cellbtn{
+  min-width:44px; padding:4px 8px; border-radius:9px; display:inline-flex; justify-content:center;
+  transition:transform .1s, box-shadow .1s;
+}
+.cellbtn:hover{transform:scale(1.1); box-shadow:0 4px 12px -2px rgba(15,23,42,.35); z-index:2; position:relative}
+table.mx tfoot td{
+  background:var(--card-2); font-weight:700; padding:9px 10px; border-top:2px solid var(--border-2);
+  text-align:center; position:sticky; bottom:0;
+}
+table.mx tfoot td.tf-alu{text-align:left; position:sticky; left:0; z-index:4}
+.legend{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:12px; color:var(--muted); font-size:12px}
+.legend .it{display:flex; align-items:center; gap:5px}
+
+/* ============ POR COMPETENCIA ============ */
+.comp-list{display:flex; flex-direction:column; gap:14px}
+.comp-card{overflow:hidden}
+.comp-head{display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--border)}
+.comp-ico{
+  width:38px;height:38px;border-radius:11px; color:#fff; display:flex;align-items:center;justify-content:center;
+  font-weight:800; font-size:11.5px; letter-spacing:.3px; flex:none;
+}
+.comp-head h3{font-size:14.5px}
+.comp-head .sub{font-size:12px; color:var(--muted)}
+.comp-head .right{margin-left:auto; display:flex; align-items:center; gap:9px}
+.desc-row{
+  display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid var(--border);
+  transition:background .12s; width:100%; text-align:left;
+}
+.desc-row:last-child{border-bottom:none}
+.desc-row:hover{background:var(--card-2)}
+.desc-code{font-weight:800; font-size:12px; font-variant-numeric:tabular-nums; min-width:52px}
+.distbar{flex:1; height:14px; display:flex; border-radius:99px; overflow:hidden; background:var(--card-2); min-width:90px}
+.distbar .seg{height:100%}
+.seg.s-IN{background:var(--in)} .seg.s-SU{background:var(--su)} .seg.s-BI{background:var(--bi)}
+.seg.s-NT{background:var(--nt)} .seg.s-SB{background:var(--sb)}
+.distbar.rev{flex-direction:row-reverse}
+.desc-counts{display:flex; gap:4px; align-items:center}
+
+/* ============ FICHA ALUMNO ============ */
+.alu-nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px}
+.alu-grid{display:grid; grid-template-columns:340px 1fr; gap:16px; align-items:start}
+@media (max-width:980px){ .alu-grid{grid-template-columns:1fr} }
+.alu-card{display:flex; flex-direction:column; gap:0; overflow:hidden}
+.alu-hero{
+  background:linear-gradient(135deg,var(--navy),var(--navy-2)); color:#fff; padding:22px 20px;
+  display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;
+}
+.avatar{
+  width:64px;height:64px;border-radius:50%; background:rgba(255,255,255,.14);
+  border:2px solid rgba(255,255,255,.35); display:flex;align-items:center;justify-content:center;
+  font-weight:800; font-size:20px; letter-spacing:.5px;
+}
+.alu-hero h3{font-size:17px; color:#fff}
+.alu-hero .sub{font-size:12px; color:#b9c9ee}
+.alu-kpis{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border)}
+.alu-kpi{background:var(--card); padding:13px 10px; text-align:center}
+.alu-kpi b{font-size:17px; display:block}
+.alu-kpi span{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-weight:700}
+.alu-comps{display:flex; flex-direction:column; gap:12px}
+.alu-comp{padding:13px 15px}
+.alu-comp .row1{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+.alu-comp .row1 h4{font-size:13.5px}
+.alu-comp .row1 .right{margin-left:auto; display:flex; gap:7px; align-items:center}
+.alu-descs{display:flex; flex-wrap:wrap; gap:6px}
+.dchip{
+  display:inline-flex; align-items:center; gap:6px; background:var(--card-2);
+  border:1px solid var(--border); padding:4px 8px 4px 10px; border-radius:9px; font-size:11.5px; font-weight:700;
+}
+
+/* ============ ESTADÍSTICAS ============ */
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:16px}
+.kpi{padding:15px 16px}
+.kpi .lab{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:6px}
+.kpi .val{font-size:24px; font-weight:800; margin-top:5px; line-height:1.1}
+.kpi .val small{font-size:13px; color:var(--muted); font-weight:600}
+.stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start}
+@media (max-width:980px){ .stats-grid{grid-template-columns:1fr} }
+.medias-rows{display:flex; flex-direction:column; gap:9px; padding:16px}
+.media-row{display:flex; align-items:center; gap:10px}
+.media-row .name{min-width:64px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px}
+.media-row .bar{flex:1; height:12px; background:var(--card-2); border-radius:99px; overflow:hidden}
+.media-row .bar i{display:block; height:100%; border-radius:99px}
+.media-row .num{min-width:38px; text-align:right; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums}
+table.stats-t{width:100%; border-collapse:collapse; font-size:13px}
+table.stats-t th, table.stats-t td{padding:8px 12px; text-align:center; border-bottom:1px solid var(--border); white-space:nowrap}
+table.stats-t th{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); background:var(--card-2)}
+table.stats-t th:first-child, table.stats-t td:first-child{text-align:left; font-weight:600}
+table.stats-t tr:last-child td{border-bottom:none}
+.canvas-box{padding:16px; display:flex; flex-direction:column; align-items:center; gap:8px}
+.canvas-box canvas{max-width:100%; height:auto}
+.card-title{padding:14px 16px 0; font-size:14.5px; display:flex; align-items:center; gap:8px}
+
+/* ============ ADMINISTRACIÓN ============ */
+.adm-grid{display:grid; grid-template-columns:1fr; gap:16px}
+.adm-sec h3{font-size:15px; margin-bottom:2px; display:flex; align-items:center; gap:8px}
+.adm-sec .desc{color:var(--muted); font-size:12.5px; margin-bottom:12px}
+table.users-t{width:100%; border-collapse:collapse; font-size:13px}
+table.users-t th, table.users-t td{padding:9px 10px; border-bottom:1px solid var(--border); text-align:left; vertical-align:middle}
+table.users-t th{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); background:var(--card-2)}
+table.users-t tr:last-child td{border-bottom:none}
+table.users-t .uemail{font-weight:600; max-width:230px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+table.users-t .uuid{font-size:10.5px; color:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.rolepill{
+  display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:99px;
+  font-size:10.5px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
+}
+.rolepill.admin{background:var(--primary-soft); color:var(--primary-strong); border:1px solid color-mix(in srgb,var(--primary) 30%,transparent)}
+.rolepill.usuario{background:var(--card-2); color:var(--muted); border:1px solid var(--border)}
+.rolepill.pend{background:#fef3c7; color:#92400e; border:1px solid #fcd34d}
+[data-theme="dark"] .rolepill.pend{background:#3a2c07; color:#fcd34d; border-color:#7a5b0d}
+.adm-form{display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; align-items:end}
+@media (max-width:700px){ .adm-form{grid-template-columns:1fr} }
+.adm-form .field{margin-bottom:0}
+.sin-usuarios{padding:18px; text-align:center; color:var(--muted); font-size:13px}
+
+/* ============ DIÁLOGOS ============ */
+.ovl{
+  position:fixed; inset:0; z-index:100; background:rgba(8,15,35,.55);
+  display:flex; align-items:center; justify-content:center; padding:18px;
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); animation:ovlIn .18s ease;
+}
+@keyframes ovlIn{from{opacity:0} to{opacity:1}}
+.dlg{
+  background:var(--card); border-radius:18px; box-shadow:var(--shadow-lg);
+  width:100%; max-width:480px; max-height:calc(100vh - 60px); display:flex; flex-direction:column;
+  animation:dlgIn .22s cubic-bezier(.34,1.4,.64,1); border:1px solid var(--border);
+}
+@keyframes dlgIn{from{opacity:0; transform:scale(.94) translateY(12px)} to{opacity:1; transform:none}}
+.dlg.wide{max-width:680px}
+.dlg-head{display:flex; align-items:flex-start; gap:10px; padding:18px 20px 12px}
+.dlg-head h3{font-size:16.5px}
+.dlg-head .sub{font-size:12.5px; color:var(--muted); margin-top:2px}
+.dlg-head .x{margin-left:auto}
+.dlg-body{padding:4px 20px 18px; overflow:auto}
+.dlg-foot{display:flex; gap:8px; justify-content:flex-end; padding:14px 20px; border-top:1px solid var(--border)}
+.dlist{display:flex; flex-direction:column}
+.dlist .drow{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--border)}
+.dlist .drow:last-child{border-bottom:none}
+.nube-row{display:flex; align-items:center; gap:10px; padding:11px 2px; border-bottom:1px solid var(--border)}
+.nube-row:last-child{border-bottom:none}
+.nube-row .info{flex:1; min-width:0}
+.nube-row .info b{display:block; font-size:14px}
+.nube-row .info span{font-size:12px; color:var(--muted)}
+.hint{background:var(--primary-soft); border:1px solid color-mix(in srgb,var(--primary) 22%,transparent); color:var(--primary-strong); padding:10px 13px; border-radius:11px; font-size:12.5px; line-height:1.5}
+.hint.warn{background:#fef3c7; border-color:#fcd34d; color:#92400e}
+[data-theme="dark"] .hint.warn{background:#3a2c07; border-color:#7a5b0d; color:#fcd34d}
+pre.rules{
+  background:var(--card-2); border:1px solid var(--border); border-radius:11px; padding:12px 14px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; line-height:1.55;
+  overflow:auto; margin:8px 0 0; white-space:pre; color:var(--text);
+}
+.rule-head{display:flex; align-items:center; gap:8px; margin-top:14px}
+.rule-head b{font-size:13px}
+.rule-head .btn{margin-left:auto}
+.set-sec{margin-bottom:16px}
+.set-sec h3{font-size:15px; margin-bottom:4px; display:flex; align-items:center; gap:8px}
+.set-sec .desc{color:var(--muted); font-size:12.5px; margin-bottom:10px}
+
+/* ============ DROPZONE ============ */
+.dropzone{
+  border:2px dashed var(--border-2); border-radius:var(--radius); background:var(--card);
+  padding:34px 20px; text-align:center; transition:all .18s; display:flex; flex-direction:column; align-items:center; gap:10px;
+}
+.dropzone:hover,.dropzone.over{border-color:var(--primary); background:var(--primary-soft)}
+.dropzone .dz-ico{width:52px;height:52px;border-radius:16px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center}
+.dropzone b{font-size:15px}
+.dropzone .dz-sub{color:var(--muted); font-size:12.5px}
+.preview-group{display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--border)}
+.preview-group input{width:17px;height:17px;accent-color:var(--primary);flex:none}
+.preview-group .info{flex:1}
+.preview-group .info b{font-size:14px}
+.preview-group .info span{display:block; font-size:12px; color:var(--muted)}
+
+/* ============ TOASTS ============ */
+#toasts{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:400; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; width:min(94vw,480px)}
+.toast{
+  pointer-events:auto; background:#0f172a; color:#f1f5f9; padding:11px 18px; border-radius:12px;
+  font-size:13.5px; font-weight:600; box-shadow:0 12px 32px -8px rgba(0,0,0,.5);
+  display:flex; align-items:center; gap:9px; animation:toastIn .25s cubic-bezier(.34,1.3,.64,1);
+  border:1px solid rgba(255,255,255,.08); max-width:100%;
+}
+@keyframes toastIn{from{opacity:0; transform:translateY(14px) scale(.96)} to{opacity:1; transform:none}}
+.toast.ok svg{color:#34d399} .toast.err svg{color:#f87171} .toast.warn svg{color:#fbbf24}
+.toast.out{animation:toastOut .3s ease forwards}
+@keyframes toastOut{to{opacity:0; transform:translateY(10px) scale(.96)}}
+
+/* ============ BOTTOM NAV (móvil) ============ */
+#bottomnav{
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:70;
+  background:color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border); padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+}
+#bottomnav .bn{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 2px;
+  border-radius:11px; color:var(--muted); font-size:10px; font-weight:700;
+}
+#bottomnav .bn.active{color:var(--primary)}
+#bottomnav .bn.active .bnico{background:var(--primary-soft)}
+.bnico{width:40px;height:26px;border-radius:99px;display:flex;align-items:center;justify-content:center}
+
+@media (max-width:900px){
+  #sidebar{transform:translateX(-105%); box-shadow:none}
+  body.nav-open #sidebar{transform:none; box-shadow:var(--shadow-lg)}
+  #scrim{position:fixed; inset:0; background:rgba(8,15,35,.45); z-index:55; display:none}
+  body.nav-open #scrim{display:block}
+  #main{margin-left:0}
+  #menuBtn{display:flex}
+  #views{padding:16px 14px 90px}
+  #bottomnav{display:flex}
+  #syncChip .txt{display:none}
+  #syncChip{padding:7px}
+  .userchip .uc-info{display:none}
+  .userchip{padding:5px}
+  .table-wrap{max-height:none}
+  #topTitle{font-size:15px}
+}
+
+/* ============ IMPRESIÓN ============ */
+#printArea{display:none}
+@media print{
+  @page{size:A4; margin:12mm}
+  body{background:#fff}
+  body > *:not(#printArea){display:none !important}
+  #printArea{display:block !important; color:#0f172a; font-size:11.5px}
+  #printArea .p-head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2.5px solid #1e40af; padding-bottom:8px; margin-bottom:12px}
+  #printArea .p-head h1{font-size:17px; color:#1e40af}
+  #printArea .p-head .p-meta{font-size:10px; color:#475569; text-align:right; line-height:1.5}
+  #printArea h2{font-size:13px; margin:12px 0 6px; color:#1e40af}
+  #printArea table{width:100%; border-collapse:collapse; font-size:9.5px}
+  #printArea th, #printArea td{border:1px solid #cbd5e1; padding:3.5px 5px; text-align:center}
+  #printArea th{background:#e8effd; color:#1e3a8a; font-size:8.5px; text-transform:uppercase; letter-spacing:.3px}
+  #printArea td.pname{text-align:left; font-weight:600; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  #printArea .pill{border-radius:99px; padding:1px 7px; font-size:8.5px; font-weight:800; color:#fff; display:inline-block; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea .pl-IN{background:#dc2626}#printArea .pl-SU{background:#ea580c}#printArea .pl-BI{background:#d97706}
+  #printArea .pl-NT{background:#65a30d}#printArea .pl-SB{background:#059669}#printArea .pl-NA{background:#94a3b8}
+  #printArea tfoot td{background:#f1f5f9; font-weight:700; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea .p-legend{display:flex; gap:10px; font-size:9px; color:#475569; margin-top:8px; flex-wrap:wrap}
+  #printArea .p-legend .pill{margin-right:3px}
+  #printArea .p-foot{margin-top:26px; display:flex; justify-content:space-between; gap:30px; font-size:10px; color:#334155}
+  #printArea .p-foot .sig{flex:1; border-top:1px solid #94a3b8; padding-top:5px; text-align:center}
+  #printArea .p-kpis{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap}
+  #printArea .p-kpi{border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px; font-size:10px}
+  #printArea .p-kpi b{display:block; font-size:14px; color:#1e40af}
+  #printArea canvas{max-width:380px; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea .avoid-break{break-inside:avoid; page-break-inside:avoid}
+}
+
+/* ============ EXTRA v2.1 (acceso por usuario) ============ */
+.login-hint{color:var(--muted); font-size:12px; text-align:center; line-height:1.5}
+.ukey{display:inline-block; padding:1px 7px; border-radius:7px; background:var(--card-2); border:1px solid var(--border); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11px; color:var(--text)}
+</style>
+</head>
+<body>
+
+<!-- ============ PANTALLA DE ACCESO ============ -->
+<div id="loginView">
+  <div class="login-bg" aria-hidden="true"></div>
+  <div class="login-card" id="loginCard">
+    <div class="login-logo"></div>
+    <h1>Perfil Competencial</h1>
+    <p class="login-sub">LOMLOE · Séneca · IES</p>
+
+    <div class="login-tabs" id="loginTabs">
+      <button type="button" class="ltab active" data-lmod="entrar">Entrar</button>
+      <button type="button" class="ltab" data-lmod="primero">Primer acceso</button>
+    </div>
+
+    <form id="formLogin" autocomplete="on">
+      <div class="field">
+        <label for="loginUsuario">Usuario</label>
+        <input class="inp" type="text" id="loginUsuario" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Tu nombre de usuario">
+      </div>
+      <div class="field">
+        <label for="loginPass">Contraseña</label>
+        <input class="inp" type="password" id="loginPass" required minlength="6" autocomplete="current-password" placeholder="Tu contraseña">
+      </div>
+      <button class="btn btn-primary" id="loginBtn" type="submit" style="width:100%">Entrar</button>
+    </form>
+
+    <form id="formPrimero" autocomplete="off" style="display:none">
+      <div class="field">
+        <label for="primerNombre">Nombre y apellidos</label>
+        <input class="inp" type="text" id="primerNombre" required placeholder="Quien administrará la app">
+      </div>
+      <div class="field">
+        <label for="primerUsuario">Nombre de usuario</label>
+        <input class="inp" type="text" id="primerUsuario" required autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="p. ej. jmartinez">
+      </div>
+      <div class="field">
+        <label for="primerPass">Contraseña</label>
+        <input class="inp" type="password" id="primerPass" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+      </div>
+      <button class="btn btn-primary" id="primerBtn" type="submit" style="width:100%">Crear cuenta de administrador/a</button>
+    </form>
+
+    <p class="login-error" id="loginError" hidden></p>
+
+    <div class="login-foot" id="pieEntrar">
+      <span class="login-hint">¿Has olvidado tu contraseña? El administrador o la administradora puede restablecerla desde <b>Administración → Usuarios</b>.</span>
+    </div>
+    <div class="login-foot" id="piePrimero" style="display:none">
+      <div class="hint" style="text-align:left">Este formulario <b>solo sirve una vez</b>: crea la primera cuenta de la aplicación, que quedará como <b>administradora</b>. El resto de cuentas las creará esa persona desde «Administración → Usuarios».</div>
+    </div>
+  </div>
+
+  <div class="login-card" id="pendCard" style="display:none">
+    <div class="login-logo"></div>
+    <h1 style="font-size:19px" id="pendTitle">Cuenta sin perfil</h1>
+    <p class="login-sub" id="pendMsg" style="margin-bottom:12px">—</p>
+    <div class="uidbox" id="pendUidBox"><code id="pendUid">—</code><button type="button" class="btn btn-sm btn-soft" data-action="copiarUid">Copiar</button></div>
+    <button class="btn" type="button" data-action="cerrarSesion" style="width:100%; margin-top:16px">Cerrar sesión</button>
+  </div>
+
+  <div class="login-card" id="waitCard" style="display:none">
+    <div class="login-logo"></div>
+    <h1 style="font-size:19px">Comprobando sesión…</h1>
+    <p class="login-sub">Conectando con Firebase</p>
+  </div>
+
+  <p class="login-copy">v2.1 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
+</div>
+
+<!-- ============ APLICACIÓN ============ -->
+<div id="app" style="display:none">
+  <aside id="sidebar" aria-label="Navegación principal">
+    <div class="brand">
+      <div class="logo" id="brandLogo"></div>
+      <div><b>Perfil Competencial</b><small>LOMLOE · Séneca</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="sidebar-foot">
+      <button class="cloudpill" id="cloudPill" data-action="abrirNube" title="Estado de la nube">
+        <span class="dot"></span><span id="cloudPillTxt">Comprobando nube…</span>
+      </button>
+      <div class="ver">v2.1 · PWA · GitHub Pages</div>
+    </div>
+  </aside>
+  <div id="scrim" data-action="cerrarNav"></div>
+  <div id="main">
+    <header id="topbar">
+      <button class="iconbtn" id="menuBtn" data-action="abrirNav" aria-label="Menú"></button>
+      <span id="topTitle">Perfil Competencial</span>
+      <span class="groupchip" id="groupChip" style="display:none"></span>
+      <div class="top-actions">
+        <button id="syncChip" data-action="sincronizar" title="Estado de sincronización (pulsar para sincronizar ahora)"><span class="dot"></span><span class="txt" id="syncTxt">Nube</span></button>
+        <button class="iconbtn" id="installBtn" data-action="instalar" title="Instalar aplicación" style="display:none"></button>
+        <button class="iconbtn" id="themeBtn" data-action="alternarTema" title="Cambiar tema"></button>
+        <button class="userchip" id="userChip" data-action="abrirCuenta" title="Cuenta">
+          <span class="uc-avatar" id="ucAvatar">?</span>
+          <span class="uc-info"><b id="ucEmail">—</b><small id="ucRole">—</small></span>
+        </button>
+      </div>
+    </header>
+    <main id="views">
+      <section class="view" id="view-inicio"></section>
+      <section class="view" id="view-resumen"></section>
+      <section class="view" id="view-competencias"></section>
+      <section class="view" id="view-alumno"></section>
+      <section class="view" id="view-stats"></section>
+      <section class="view" id="view-admin"></section>
+      <section class="view" id="view-ajustes"></section>
+    </main>
+  </div>
+</div>
+
+<nav id="bottomnav" aria-label="Navegación móvil"></nav>
+<div id="dlgRoot"></div>
+<div id="toasts"></div>
+<div id="printArea"></div>
+<input type="file" id="fileXml" accept=".xml,text/xml,application/xml" multiple hidden>
+<input type="file" id="fileJson" accept=".json,application/json" hidden>
+
+<script>
+"use strict";
+/* =====================================================================
+   PERFIL COMPETENCIAL LOMLOE · PWA (GitHub Pages)
+   core.js · Configuración, utilidades, dominio LOMLOE y parser XML Séneca
+   ===================================================================== */
+
+
+/* ============ CONFIGURACIÓN FIREBASE ============ */
+var FIREBASE_CONFIG_DEFECTO = {
+  apiKey: "AIzaSyAZrgrH46VBv56E9i8MUzwtxyoQf8t7He0",
+  authDomain: "iesvdv-96a18.firebaseapp.com",
+  databaseURL: "https://iesvdv-96a18-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "iesvdv-96a18",
+  storageBucket: "iesvdv-96a18.firebasestorage.app",
+  messagingSenderId: "526669274609",
+  appId: "1:526669274609:web:0cf5789633fca7e4467850",
+  measurementId: "G-K41E7JD55L"
+};
+/** Raíz EXCLUSIVA de esta aplicación dentro de la RTDB (no se mezcla con otras apps) */
+var DB_ROOT = "nivelesCompetencialesIESvdv";
+var LS_STATE = "nc-pwa-state-v2";
+var LS_AUTH = "nc-pwa-auth-v2";
+
+function obtenerConfig(){
+  try{
+    var raw = localStorage.getItem(LS_STATE);
+    if(raw){
+      var st = JSON.parse(raw);
+      if(st && st.firebaseConfig && st.firebaseConfig.apiKey && st.firebaseConfig.databaseURL) return st.firebaseConfig;
+    }
+  }catch(e){}
+  return FIREBASE_CONFIG_DEFECTO;
+}
+
+/* ============ ICONOS SVG ============ */
+var ICO = {
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  layers:'<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M8 17v-6"/><path d="M13 17V7"/><path d="M18 17v-9"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/>',
+  cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-.42-8.98 6 6 0 0 0-11.7 1.62A3.5 3.5 0 0 0 6 19h11.5Z"/>',
+  cloudUp:'<path d="M17.5 19a4.5 4.5 0 1 0-.42-8.98 6 6 0 0 0-11.7 1.62A3.5 3.5 0 0 0 6 19h11.5Z"/><path d="M12 15v-5"/><path d="m9.5 12.5 2.5-2.5 2.5 2.5"/>',
+  cloudDown:'<path d="M17.5 19a4.5 4.5 0 1 0-.42-8.98 6 6 0 0 0-11.7 1.62A3.5 3.5 0 0 0 6 19h11.5Z"/><path d="M12 10v5"/><path d="m9.5 12.5 2.5 2.5 2.5-2.5"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  left:'<path d="m15 18-6-6 6-6"/>',
+  right:'<path d="m9 18 6-6-6-6"/>',
+  print:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
+  trash:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8 5-5 5 5"/><path d="M12 3v12"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  alert:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15A2.5 2.5 0 0 0 6.5 22H20v-2.5"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  shield:'<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10Z"/>',
+  install:'<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><rect x="4" y="19" width="16" height="2" rx="1"/>',
+  key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9M17 3l4 4M14 6l3 3"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  wifi_off:'<path d="M2 2l20 20"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M18.6 13.4a10 10 0 0 0-2.1-1.3M2 8.8A15 15 0 0 1 7.5 6M21.5 12a15 15 0 0 0-3.6-2.5"/><path d="M12 20h.01"/>'
+};
+function icon(name, size){
+  size = size || 18;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICO[name]||"")+'</svg>';
+}
+
+/* ============ UTILIDADES ============ */
+function $(sel, root){ return (root||document).querySelector(sel); }
+function $all(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function fmtNum(x, dec){ if(x==null||isNaN(x)) return "—"; return x.toFixed(dec==null?2:dec).replace(".", ","); }
+function fmtFecha(iso){
+  if(!iso) return "—";
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return String(iso);
+  return d.toLocaleDateString("es-ES", {day:"numeric", month:"short", year:"numeric"});
+}
+function haceTiempo(iso){
+  if(!iso) return "";
+  var s = Math.max(0, (Date.now() - new Date(iso).getTime())/1000);
+  if(s < 60) return "hace instantes";
+  if(s < 3600) return "hace " + Math.floor(s/60) + " min";
+  if(s < 86400) return "hace " + Math.floor(s/3600) + " h";
+  return "hace " + Math.floor(s/86400) + " días";
+}
+function iniciales(nombre){
+  var p = String(nombre||"?").trim().split(/\s+/);
+  return ((p[0]||"")[0]||"?") + ((p.length>1 ? p[p.length-1][0] : "")||"");
+}
+function descargar(nombre, contenido, tipo){
+  var blob = contenido instanceof Blob ? contenido : new Blob([contenido], {type: tipo||"text/plain;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+function sanitizarKey(raw){ return String(raw).replace(/[.$#\[\]\/]/g, "").replace(/\s+/g, " ").trim(); }
+
+/* ============ DOMINIO LOMLOE ============ */
+var COMPETENCIAS = [
+  { code:"CCL",  nombre:"Competencia en comunicación lingüística", corto:"Lingüística",   color:"#8b5cf6" },
+  { code:"CP",   nombre:"Competencia plurilingüe",                 corto:"Plurilingüe",  color:"#06b6d4" },
+  { code:"STEM", nombre:"Competencia matemática y en ciencia, tecnología e ingeniería", corto:"STEM", color:"#10b981" },
+  { code:"CD",   nombre:"Competencia digital",                     corto:"Digital",      color:"#f59e0b" },
+  { code:"CPSAA",nombre:"Competencia personal, social y de aprender a aprender", corto:"Pers. y aprender", color:"#ef4444" },
+  { code:"CC",   nombre:"Competencia ciudadana",                   corto:"Ciudadana",    color:"#0ea5e9" },
+  { code:"CE",   nombre:"Competencia emprendedora",                corto:"Emprendedora", color:"#ec4899" },
+  { code:"CCEC", nombre:"Competencia en conciencia y expresión culturales", corto:"Cultural", color:"#84cc16" }
+];
+var COMP_MAP = {};
+COMPETENCIAS.forEach(function(c){ COMP_MAP[c.code]=c; });
+
+var NIVELES = [
+  { id:"11", code:"IN", nombre:"Insuficiente",  escala:1, cualitativo:true },
+  { id:"12", code:"SU", nombre:"Suficiente",    escala:2, cualitativo:true },
+  { id:"13", code:"BI", nombre:"Bien",          escala:3, cualitativo:true },
+  { id:"14", code:"NT", nombre:"Notable",       escala:4, cualitativo:true },
+  { id:"15", code:"SB", nombre:"Sobresaliente", escala:5, cualitativo:true },
+  { id:"5",  code:"1-2,9", nombre:"1-2,9", escala:1, cualitativo:false },
+  { id:"6",  code:"3-4,9", nombre:"3-4,9", escala:2, cualitativo:false },
+  { id:"7",  code:"5-6,9", nombre:"5-6,9", escala:3, cualitativo:false },
+  { id:"8",  code:"7-8,9", nombre:"7-8,9", escala:4, cualitativo:false },
+  { id:"9",  code:"9-10",  nombre:"9-10",  escala:5, cualitativo:false }
+];
+var NIVELES_MAP = {};
+NIVELES.forEach(function(n){ NIVELES_MAP[n.id]=n; });
+var NIVEL_POR_CODIGO = {};
+NIVELES.forEach(function(n){ NIVEL_POR_CODIGO[n.code]=n; });
+var NIVELES_CUAL = NIVELES.filter(function(n){ return n.cualitativo; });
+
+function nivelPorEscala(media){
+  var e = Math.min(5, Math.max(1, Math.round(media)));
+  for(var i=0;i<NIVELES_CUAL.length;i++){ if(NIVELES_CUAL[i].escala===e) return NIVELES_CUAL[i]; }
+  return null;
+}
+function escalaDeNivel(nivelId){ var n=NIVELES_MAP[nivelId]; return n ? n.escala : null; }
+function pillNivel(codigo, extra){
+  var cls = "lvl-" + (codigo||"NA");
+  var t = codigo==="NA" ? "Sin datos" : (NIVEL_POR_CODIGO[codigo] ? NIVEL_POR_CODIGO[codigo].nombre : codigo);
+  return '<span class="pill '+cls+' '+(extra||"")+'" title="'+esc(t)+'">'+esc(codigo||"—")+'</span>';
+}
+function compararAlumnos(a,b){
+  var ka = (a.apellido1+" "+a.apellido2+" "+a.nombre).toUpperCase();
+  var kb = (b.apellido1+" "+b.apellido2+" "+b.nombre).toUpperCase();
+  return ka.localeCompare(kb, "es");
+}
+function nombreAlumno(a){ return (a.apellido1+" "+a.apellido2+", "+a.nombre).replace(/,\s*$/,"").trim(); }
+function construirGrupoKey(meta){
+  return sanitizarKey(meta.unidadNombre+"_"+meta.anno+"_P"+meta.periodo+"_"+(meta.convocatoria||"Conv"));
+}
+function grupoTitulo(ds){
+  var m = ds.meta;
+  return m.unidadNombre + " · " + m.anno + " · P" + m.periodo + (m.convocatoria ? " · " + m.convocatoria : "");
+}
+function grupoEtiqueta(ds){
+  var m = ds.meta;
+  return m.cursoGeneral + " — Grupo " + m.unidadNombre;
+}
+
+/* --- Promedios y estadísticas --- */
+function promediosAlumno(alumno){
+  var res = {};
+  COMPETENCIAS.forEach(function(comp){
+    var valores = [];
+    Object.keys(alumno.descriptores||{}).forEach(function(desc){
+      if(desc.indexOf(comp.code)===0){
+        var e = escalaDeNivel(alumno.descriptores[desc]);
+        if(e!==null) valores.push(e);
+      }
+    });
+    if(valores.length===0){ res[comp.code] = {media:null, code:"NA", evaluados:0}; }
+    else{
+      var media = valores.reduce(function(s,v){return s+v;},0)/valores.length;
+      var nv = nivelPorEscala(media);
+      res[comp.code] = {media:media, code:nv?nv.code:"NA", evaluados:valores.length};
+    }
+  });
+  return res;
+}
+function mediaGlobalAlumno(alumno){
+  var pr = promediosAlumno(alumno), suma=0, n=0;
+  COMPETENCIAS.forEach(function(c){ if(pr[c.code].media!=null){ suma+=pr[c.code].media; n++; } });
+  return n? {media:suma/n, code:(nivelPorEscala(suma/n)||{}).code||"NA"} : {media:null, code:"NA"};
+}
+function descriptoresDeCompetencia(alumnos, code){
+  var nums = {};
+  alumnos.forEach(function(a){
+    Object.keys(a.descriptores||{}).forEach(function(desc){
+      if(desc.indexOf(code)===0){
+        var num = parseInt(desc.slice(code.length), 10);
+        if(!isNaN(num)) nums[num]=true;
+      }
+    });
+  });
+  return Object.keys(nums).map(Number).sort(function(a,b){return a-b;});
+}
+function estadisticasGrupo(alumnos){
+  var medias={}, distribucion={}, porcentajeAltos={}, totalDesc=0;
+  COMPETENCIAS.forEach(function(comp){
+    distribucion[comp.code] = {IN:0,SU:0,BI:0,NT:0,SB:0};
+    var suma=0, conDatos=0;
+    alumnos.forEach(function(a){
+      var p = promediosAlumno(a)[comp.code];
+      if(p.media!=null){
+        suma+=p.media; conDatos++;
+        totalDesc += p.evaluados;
+        var nv = nivelPorEscala(p.media);
+        if(nv) distribucion[comp.code][nv.code]++;
+      }
+    });
+    medias[comp.code] = conDatos? suma/conDatos : null;
+    porcentajeAltos[comp.code] = conDatos? (distribucion[comp.code].NT + distribucion[comp.code].SB)/conDatos*100 : null;
+  });
+  var conMedia = COMPETENCIAS.filter(function(c){ return medias[c.code]!=null; });
+  var mediaGlobal = conMedia.length? conMedia.reduce(function(s,c){return s+medias[c.code];},0)/conMedia.length : null;
+  var ordenada = conMedia.slice().sort(function(a,b){ return medias[b.code]-medias[a.code]; });
+  return {
+    totalAlumnos: alumnos.length, medias:medias, distribucion:distribucion,
+    porcentajeAltos:porcentajeAltos, mediaGlobal:mediaGlobal,
+    competenciaMasAlta: ordenada.length? ordenada[0].code : null,
+    competenciaMasBaja: ordenada.length? ordenada[ordenada.length-1].code : null,
+    totalDescriptores: totalDesc
+  };
+}
+
+/* ============ PARSER XML SÉNECA (UTF-8 / ISO-8859-1) ============ */
+function txtNodo(nodo, tag){
+  if(!nodo) return "";
+  var el = nodo.querySelector(tag);
+  return el && el.textContent ? el.textContent.trim() : "";
+}
+function parsearXML(xmlText, nombreArchivo){
+  var xml = new DOMParser().parseFromString(xmlText, "application/xml");
+  if(xml.querySelector("parsererror")) throw new Error("El archivo XML no tiene un formato válido.");
+  var raiz = xml.querySelector("SERVICIO");
+  if(!raiz) throw new Error("No es un XML de Séneca (falta el nodo SERVICIO).");
+  var dg = xml.querySelector("DATOS_GENERALES");
+  if(!dg) throw new Error("Faltan los DATOS_GENERALES del informe.");
+
+  var modulo = txtNodo(dg,"MODULO");
+  if(modulo && modulo.toUpperCase().indexOf("NIVELES_COMPETENCIALES")<0)
+    console.warn("Módulo inesperado:", modulo);
+
+  var codigoCentro = txtNodo(dg,"CODIGO_CENTRO");
+  var nombreCentro = txtNodo(dg,"NOMBRE_CENTRO");
+  var localidad    = txtNodo(dg,"LOCALIDAD_CENTRO");
+  var anno         = txtNodo(dg,"C_ANNO");
+  var periodo      = txtNodo(dg,"N_PERIODO");
+  var convocatoria = txtNodo(dg,"D_CONVOCATORIA");
+  var fecha        = txtNodo(dg,"FECHA");
+
+  var datasets = [];
+  var fechaCarga = new Date().toISOString();
+  var cursos = Array.prototype.slice.call(xml.querySelectorAll("CURSOS > CURSO"));
+  if(cursos.length===0) throw new Error("El XML no contiene ningún nodo CURSO.");
+
+  cursos.forEach(function(curso){
+    var cursoGeneral = txtNodo(curso,"D_OFERTAMATRIG") || "Curso";
+    var unidades = Array.prototype.slice.call(curso.querySelectorAll("UNIDADES > UNIDAD"));
+    unidades.forEach(function(unidad){
+      var unidadNombre = txtNodo(unidad,"T_NOMBRE") || "Grupo";
+      var unidadId = txtNodo(unidad,"X_UNIDAD");
+      var nodosAlumno = Array.prototype.slice.call(unidad.querySelectorAll("ALUMNOS > ALUMNO"));
+      if(nodosAlumno.length===0) return;
+
+      var alumnos = nodosAlumno.map(function(al){
+        var descriptores = {};
+        Array.prototype.slice.call(al.querySelectorAll("COMPETENCIACLAVE_ALUMNO")).forEach(function(cc){
+          var code = txtNodo(cc,"C_DESOPELOMLOE");
+          var nivelId = txtNodo(cc,"X_NIVLOMLOE");
+          if(code && NIVELES_MAP[nivelId]!==undefined) descriptores[code]=nivelId;
+        });
+        return {
+          matricula: txtNodo(al,"X_MATRICULA"),
+          numEscolar: txtNodo(al,"C_NUMESCOLAR"),
+          apellido1: txtNodo(al,"T_APELLIDO1"),
+          apellido2: txtNodo(al,"T_APELLIDO2"),
+          nombre: txtNodo(al,"T_NOMBRE_ALU"),
+          descriptores: descriptores
+        };
+      });
+      alumnos.sort(compararAlumnos);
+
+      var meta = {
+        codigoCentro: codigoCentro, nombreCentro: nombreCentro, localidad: localidad,
+        anno: anno, periodo: periodo, convocatoria: convocatoria, fecha: fecha,
+        cursoGeneral: cursoGeneral, unidadId: unidadId, unidadNombre: unidadNombre,
+        fechaCarga: fechaCarga, totalAlumnos: alumnos.length
+      };
+      datasets.push({ key: construirGrupoKey(meta), meta: meta, alumnos: alumnos });
+    });
+  });
+
+  if(datasets.length===0)
+    throw new Error("No se encontraron alumnos con niveles competenciales" + (nombreArchivo? " en «"+nombreArchivo+"»" : "") + ".");
+  return datasets;
+}
+/** Lee un File respetando la codificación de Séneca (UTF-8 con fallback ISO-8859-1) */
+function leerArchivoXML(file){
+  return file.arrayBuffer().then(function(buffer){
+    var utf8 = new TextDecoder("utf-8", {fatal:false}).decode(buffer);
+    if(utf8.indexOf("\uFFFD")<0) return utf8;
+    return new TextDecoder("iso-8859-1").decode(buffer);
+  });
+}
+
+/* =====================================================================
+   cloud.js · Estado local (espejo offline), cliente REST de la Realtime
+   Database, cola de sincronización offline-first y auto-sync de cambios
+   ===================================================================== */
+
+
+/* ============ ESTADO LOCAL (espejo offline) ============ */
+var S = {
+  version: 2,
+  view: "inicio",
+  activeKey: null,
+  alumnoIdx: 0,
+  filtroResumen: "",
+  theme: "auto",
+  datasets: {},
+  nubeGuardados: {},
+  cola: [],
+  centrosConocidos: [],
+  ultimaSync: null,
+  firebaseConfig: null
+};
+function cargarEstado(){
+  try{
+    var raw = localStorage.getItem(LS_STATE);
+    if(raw){
+      var d = JSON.parse(raw);
+      if(d && (d.version===2 || d.version===1)){
+        ["view","activeKey","alumnoIdx","theme","datasets","nubeGuardados","cola","centrosConocidos","ultimaSync","firebaseConfig"].forEach(function(k){
+          if(d[k]!==undefined) S[k]=d[k];
+        });
+        if(!S.cola) S.cola=[];
+        if(!S.datasets) S.datasets={};
+        if(!S.centrosConocidos) S.centrosConocidos=[];
+        S.version = 2;
+      }
+    }
+  }catch(e){ console.warn("Estado corrupto, se reinicia", e); }
+}
+function guardarEstado(){
+  try{
+    localStorage.setItem(LS_STATE, JSON.stringify({
+      version:2, view:S.view, activeKey:S.activeKey, alumnoIdx:S.alumnoIdx, theme:S.theme,
+      datasets:S.datasets, nubeGuardados:S.nubeGuardados, cola:S.cola,
+      centrosConocidos:S.centrosConocidos, ultimaSync:S.ultimaSync, firebaseConfig:S.firebaseConfig
+    }));
+  }catch(e){ console.error("No se pudo guardar el estado local", e); toast("Error guardando en este dispositivo","err"); }
+}
+function recordarCentro(codigo){
+  if(!codigo) return;
+  if(S.centrosConocidos.indexOf(codigo)<0){
+    S.centrosConocidos.push(codigo);
+    guardarEstado();
+  }
+}
+function gruposLocales(){
+  return Object.keys(S.datasets).map(function(k){ return S.datasets[k]; })
+    .sort(function(a,b){ return (a.meta.unidadNombre||"").localeCompare(b.meta.unidadNombre||"", "es") || (a.key||"").localeCompare(b.key||"", "es"); });
+}
+function grupoActivo(){ return S.activeKey ? S.datasets[S.activeKey] : null; }
+function asegurarGrupoActivo(){
+  if(!grupoActivo()){
+    var gs = gruposLocales();
+    if(gs.length){ S.activeKey = gs[0].key; }
+  }
+  return grupoActivo();
+}
+function importarDatasets(list){
+  list.forEach(function(ds){ S.datasets[ds.key]=ds; recordarCentro(ds.meta.codigoCentro); });
+  if(!S.activeKey && list.length) S.activeKey = list[0].key;
+  guardarEstado();
+}
+
+/* ============ SESIÓN (token Identity Toolkit, compartido con auth.js) ============ */
+var Auth = {
+  sesion: null,      // {idToken, refreshToken, expiresAt, uid, email}
+  perfil: null,      // {email, role, creadoEn} leído de la RTDB
+  cargada: false,
+  cargar: function(){
+    try{
+      var raw = localStorage.getItem(LS_AUTH);
+      if(raw){
+        var s = JSON.parse(raw);
+        if(s && s.refreshToken){ this.sesion = s.sesion||s; if(s.perfil) this.perfil = s.perfil; }
+      }
+    }catch(e){}
+    this.cargada = true;
+  },
+  persistir: function(){
+    try{
+      if(this.sesion) localStorage.setItem(LS_AUTH, JSON.stringify({ sesion:this.sesion, perfil:this.perfil }));
+      else localStorage.removeItem(LS_AUTH);
+    }catch(e){}
+  },
+  uid: function(){ return this.sesion ? this.sesion.uid : null; },
+  email: function(){ return this.sesion ? this.sesion.email : (this.perfil? this.perfil.email : null); },
+  esAdmin: function(){ return !!(this.perfil && this.perfil.role === "administrador"); },
+  refrescar: function(){
+    var self = this;
+    if(!self.sesion || !self.sesion.refreshToken) return Promise.resolve(null);
+    var cfg = obtenerConfig();
+    return fetch("https://securetoken.googleapis.com/v1/token?key="+encodeURIComponent(cfg.apiKey), {
+      method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(self.sesion.refreshToken)
+    }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(res){
+      if(res.ok && res.j.id_token){
+        self.sesion = {
+          idToken:res.j.id_token, refreshToken:res.j.refresh_token||self.sesion.refreshToken,
+          expiresAt: Date.now() + (parseInt(res.j.expires_in,10)||3600)*1000 - 60000,
+          uid: self.sesion.uid || res.j.user_id, email: self.sesion.email || res.j.email || null
+        };
+        self.persistir();
+        return self.sesion.idToken;
+      }
+      return null;
+    }).catch(function(){ return null; });
+  },
+  token: function(){
+    var self = this;
+    if(!self.cargada) self.cargar();
+    if(self.sesion && Date.now() < self.sesion.expiresAt) return Promise.resolve(self.sesion.idToken);
+    if(self.sesion && self.sesion.refreshToken) return self.refrescar();
+    return Promise.resolve(null);
+  }
+};
+var RUTA_USERS = DB_ROOT + "/users";
+var RUTA_CENTROS = DB_ROOT + "/_centros";
+
+/* ============ CLIENTE REST DE REALTIME DATABASE ============ */
+function rtdbBase(){ return (obtenerConfig().databaseURL||"").replace(/\/+$/,""); }
+function restURL(ruta, query){
+  var url = rtdbBase() + "/" + ruta.split("/").map(encodeURIComponent).join("/") + ".json";
+  return Auth.token().then(function(tk){
+    var qs = [];
+    if(tk) qs.push("auth="+encodeURIComponent(tk));
+    if(query) Object.keys(query).forEach(function(k){ qs.push(k+"="+encodeURIComponent(query[k])); });
+    return url + (qs.length? "?"+qs.join("&") : "");
+  });
+}
+function esRespuestaAuth(r){ return r.status===401 || r.status===403; }
+/** GET con reintento tras refrescar token si recibe 401/403 */
+function restGet(ruta, query){
+  return restURL(ruta, query).then(function(url){
+    return fetch(url).then(function(r){
+      var deNuevo = esRespuestaAuth(r) && Auth.sesion ? Auth.refrescar().then(function(){
+        return restURL(ruta, query).then(function(u2){ return fetch(u2).then(function(r2){ return r2.text(); }); });
+      }) : Promise.resolve(r.text());
+      return deNuevo.then(function(t){ return (t==null || t==="null" || t==="") ? null : JSON.parse(t); });
+    });
+  });
+}
+function comprobarEscritura(r){
+  if(r.ok) return true;
+  return r.text().then(function(t){
+    var msg = t;
+    try{ var j = JSON.parse(t); msg = (j.error||"").toString(); }catch(e){}
+    throw new Error(msg || ("HTTP "+r.status));
+  });
+}
+function restMetodo(metodo, ruta, valor){
+  return restURL(ruta).then(function(url){
+    var opts = {method:metodo, headers:{"Content-Type":"application/json"}};
+    if(valor!==undefined) opts.body = JSON.stringify(valor);
+    return fetch(url, opts).then(function(r){
+      if(esRespuestaAuth(r) && Auth.sesion){
+        return Auth.refrescar().then(function(){
+          return restURL(ruta).then(function(u2){
+            var o2 = {method:metodo, headers:{"Content-Type":"application/json"}};
+            if(valor!==undefined) o2.body = JSON.stringify(valor);
+            return fetch(u2, o2).then(comprobarEscritura);
+          });
+        });
+      }
+      return comprobarEscritura(r);
+    });
+  });
+}
+function restPut(ruta, valor){ return restMetodo("PUT", ruta, valor); }
+function restPatch(ruta, valor){ return restMetodo("PATCH", ruta, valor); }
+function restDelete(ruta){ return restMetodo("DELETE", ruta); }
+
+/* ============ OPERACIONES DE NUBE (ruta exclusiva) ============ */
+function rutaGrupos(centro){ return DB_ROOT + "/" + (centro||"SIN_CENTRO") + "/grupos"; }
+function normalizarGrupo(nodo, key){
+  if(!nodo || !nodo.meta) return null;
+  var alumnos = Array.isArray(nodo.alumnos) ? nodo.alumnos : (nodo.alumnos ? Object.keys(nodo.alumnos).map(function(k){return nodo.alumnos[k];}) : []);
+  return { key: nodo.key || key, meta: nodo.meta, alumnos: alumnos };
+}
+function nubeListar(centro){
+  return restGet(rutaGrupos(centro)).then(function(data){
+    if(!data) return [];
+    return Object.keys(data).map(function(k){ return normalizarGrupo(data[k], k); }).filter(Boolean);
+  });
+}
+/** Lista TODOS los grupos de la nube (índice de centros + centros conocidos localmente) */
+function nubeListarTodos(){
+  var centros = {};
+  (S.centrosConocidos||[]).forEach(function(c){ if(c) centros[c]=true; });
+  return restGet(RUTA_CENTROS).then(function(idx){
+    Object.keys(idx||{}).forEach(function(c){ if(c) centros[c]=true; });
+  }).catch(function(){ /* si el índice falla, seguimos con los locales */ })
+  .then(function(){
+    var claves = Object.keys(centros);
+    if(claves.length===0) return [];
+    return Promise.all(claves.map(function(c){
+      return nubeListar(c).catch(function(){ return []; });
+    })).then(function(arr){ return arr.reduce(function(a,b){ return a.concat(b); }, []); });
+  });
+}
+function nubeGuardar(ds){
+  var copia = JSON.parse(JSON.stringify(ds));
+  copia.meta.fechaCarga = new Date().toISOString();
+  copia.meta.totalAlumnos = ds.alumnos.length;
+  return restPut(rutaGrupos(ds.meta.codigoCentro) + "/" + ds.key, copia).then(function(){
+    return restPut(RUTA_CENTROS + "/" + (ds.meta.codigoCentro||"SIN_CENTRO"), true);
+  });
+}
+function nubeCargar(centro, key){
+  return restGet(rutaGrupos(centro) + "/" + key).then(function(n){ var g = normalizarGrupo(n, key); if(!g) throw new Error("El grupo no existe en la nube."); return g; });
+}
+function nubeEliminar(centro, key){ return restDelete(rutaGrupos(centro) + "/" + key); }
+
+/* ============ COLA DE SINCRONIZACIÓN (offline-first) ============ */
+function encolar(op){
+  S.cola.push(op);
+  guardarEstado();
+  refrescarEstadoNubeUI();
+}
+/** Auto-sync: tras cualquier cambio en pantalla, envía los grupos afectados a la nube */
+function sincronizarCambios(keys){
+  if(!Auth.esAdmin()) return; // los perfiles "usuario" no modifican datos
+  var lista = Array.isArray(keys) ? keys : [keys];
+  lista.forEach(function(k){ if(S.datasets[k]) encolar({t:"save", key:k, ts:Date.now()}); });
+  if(lista.length) sincronizar(false);
+}
+function sincronizar(silencioso){
+  if(!navigator.onLine){
+    if(!silencioso) toast("Sin conexión: los cambios se enviarán al reconectarse","warn");
+    return Promise.resolve(false);
+  }
+  if(S.sincronizando) return Promise.resolve(false);
+  S.sincronizando = true;
+  refrescarEstadoNubeUI();
+  var cola = S.cola.slice(); S.cola = [];
+  var fallo = null;
+  var cadena = Promise.resolve();
+  cola.forEach(function(op){
+    cadena = cadena.then(function(){
+      if(op.t==="save"){
+        var ds = S.datasets[op.key];
+        if(!ds) return null;
+        return nubeGuardar(ds).then(function(){
+          S.nubeGuardados[op.key] = new Date().toISOString();
+          recordarCentro(ds.meta.codigoCentro);
+        });
+      }
+      if(op.t==="del") return nubeEliminar(op.centro, op.key);
+      return null;
+    }).catch(function(e){ fallo = e; S.cola.push(op); });
+  });
+  return cadena.then(function(){
+    S.sincronizando = false;
+    if(fallo){
+      S.errorNube = fallo.message||String(fallo);
+      guardarEstado(); refrescarEstadoNubeUI();
+      if(!silencioso) toast("Error al sincronizar: "+S.errorNube,"err");
+      return false;
+    }
+    S.ultimaSync = new Date().toISOString();
+    S.errorNube = null;
+    guardarEstado(); refrescarEstadoNubeUI();
+    if(cola.length && !silencioso) toast("Cambios sincronizados automáticamente con la nube","ok");
+    return true;
+  });
+}
+/* Estado de nube para la UI */
+function estadoNube(){
+  if(!Auth.sesion) return {cls:"", txt:"Sin sesión"};
+  if(!navigator.onLine) return {cls:"", txt:"Sin conexión · modo local"};
+  if(S.sincronizando) return {cls:"warn", txt:"Sincronizando…"};
+  if(S.errorNube) return {cls:"err", txt:"Nube: revisa Ajustes"};
+  if(S.cola.length) return {cls:"warn", txt:S.cola.length+" pendiente"+(S.cola.length>1?"s":"")};
+  if(S.ultimaSync) return {cls:"ok", txt:"Nube sincronizada"};
+  return {cls:"ok", txt:"Auto-sync activado"};
+}
+function refrescarEstadoNubeUI(){
+  var e = estadoNube();
+  var chip = $("#syncChip"), pill = $("#cloudPill");
+  if(chip){ chip.className = e.cls; $("#syncTxt").textContent = e.txt; }
+  if(pill){ pill.className = "cloudpill "+e.cls; $("#cloudPillTxt").textContent = e.txt; }
+}
+window.addEventListener("online", function(){ sincronizar(true); });
+window.addEventListener("offline", refrescarEstadoNubeUI);
+
+/* =====================================================================
+   auth.js · Sistema de usuarios con dos perfiles — ACCESO POR USUARIO
+   Y CONTRASEÑA (sin correo electrónico). Internamente Firebase Auth
+   recibe un identificador técnico (usuario@DOMINIO_INTERNO) que ningún
+   usuario ve ni necesita. Las contraseñas las gestiona el administrador.
+   - usuario: solo visualización (matriz, fichas, estadísticas, PDF)
+   - administrador: importa XML, añade/elimina cursos y gestiona usuarios
+   La primera cuenta (pestaña «Primer acceso») queda como administradora.
+   ===================================================================== */
+
+
+var IDT_BASE = "https://identitytoolkit.googleapis.com/v1/accounts:";
+var DOMINIO_INTERNO = "acceso.perfilcomp.interno";
+
+/** Identificador técnico interno a partir del nombre de usuario */
+function emailDeUsuario(u){
+  return String(u||"").trim().toLowerCase() + "@" + DOMINIO_INTERNO;
+}
+var RE_USUARIO = /^[a-z0-9._-]{3,20}$/;
+function usuarioValido(u){ return RE_USUARIO.test(String(u||"").trim().toLowerCase()); }
+function normalizarUsuario(u){ return String(u||"").trim().toLowerCase(); }
+
+function idtAccion(op, cuerpo){
+  var cfg = obtenerConfig();
+  return fetch(IDT_BASE + op + "?key=" + encodeURIComponent(cfg.apiKey), {
+    method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(cuerpo)
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); });
+}
+function mapaErrorAuth(j){
+  var m = (j && j.error && j.error.message) || "";
+  if(m.indexOf("EMAIL_NOT_FOUND")>=0 || m.indexOf("INVALID_LOGIN_CREDENTIALS")>=0 || m.indexOf("INVALID_PASSWORD")>=0)
+    return "Usuario o contraseña incorrectos.";
+  if(m.indexOf("EMAIL_EXISTS")>=0) return "Ese nombre de usuario ya está en uso.";
+  if(m.indexOf("WEAK_PASSWORD")>=0) return "La contraseña debe tener al menos 6 caracteres.";
+  if(m.indexOf("INVALID_EMAIL")>=0) return "El nombre de usuario no es válido.";
+  if(m.indexOf("TOO_MANY_ATTEMPTS")>=0) return "Demasiados intentos. Espera un poco y vuelve a probar.";
+  if(m.indexOf("USER_DISABLED")>=0) return "Esta cuenta está deshabilitada.";
+  if(m.indexOf("INVALID_ID_TOKEN")>=0 || m.indexOf("CREDENTIAL_TOO_OLD")>=0)
+    return "Tu sesión es demasiado antigua para esta operación: cierra sesión, vuelve a entrar y reinténtalo.";
+  if(!navigator.onLine) return "Sin conexión con el servidor.";
+  return m || "Error de autenticación.";
+}
+
+/* ============ FLUJOS DE AUTENTICACIÓN ============ */
+function authCrearSesion(j){
+  Auth.sesion = {
+    idToken: j.idToken, refreshToken: j.refreshToken,
+    expiresAt: Date.now() + (parseInt(j.expiresIn,10)||3600)*1000 - 60000,
+    uid: j.localId, email: j.email || null
+  };
+  Auth.persistir();
+}
+function authEntrar(usuario, pass){
+  return idtAccion("signInWithPassword", {email:emailDeUsuario(usuario), password:pass, returnSecureToken:true}).then(function(res){
+    if(!res.ok) throw new Error(mapaErrorAuth(res.j));
+    authCrearSesion(res.j);
+    return res.j.localId;
+  });
+}
+function authRegistrarse(usuario, pass){
+  return idtAccion("signUp", {email:emailDeUsuario(usuario), password:pass, returnSecureToken:true}).then(function(res){
+    if(!res.ok) throw new Error(mapaErrorAuth(res.j));
+    authCrearSesion(res.j);
+    return res.j.localId;
+  });
+}
+function authSalir(){
+  Auth.sesion = null; Auth.perfil = null;
+  Auth.persistir();
+}
+function authCambiarContrasena(nueva){
+  return Auth.token().then(function(tk){
+    if(!tk) throw new Error("Sesión no válida.");
+    return idtAccion("update", {idToken:tk, password:nueva, returnSecureToken:false});
+  }).then(function(res){
+    if(!res.ok) throw new Error(mapaErrorAuth(res.j));
+    return true;
+  });
+}
+/* Creación de cuentas por parte del administrador (REST no toca su sesión) */
+function adminCrearCuentaAuth(usuario, pass){
+  return idtAccion("signUp", {email:emailDeUsuario(usuario), password:pass, returnSecureToken:true}).then(function(res){
+    if(!res.ok) throw new Error(mapaErrorAuth(res.j));
+    return {uid:res.j.localId, email:res.j.email||emailDeUsuario(usuario)};
+  });
+}
+/**
+ * Restablecimiento de contraseña por el administrador, sin correos:
+ * 1) entra en la cuenta con la contraseña almacenada en su perfil,
+ * 2) cambia la contraseña con ese token, 3) actualiza la copia del perfil.
+ */
+function adminRestablecerPass(uid, nueva){
+  return restGet(RUTA_USERS + "/" + uid).then(function(p){
+    if(!p || !p.usuario) throw new Error("Perfil no encontrado.");
+    if(!p.password) throw new Error("Este perfil no tiene contraseña almacenada (creado con una versión anterior). Elimina el usuario y vuelve a crearlo.");
+    return idtAccion("signInWithPassword", {email:emailDeUsuario(p.usuario), password:p.password, returnSecureToken:true}).then(function(res){
+      if(!res.ok) throw new Error("No se pudo verificar la cuenta con la contraseña almacenada (alguien la cambió por fuera). Elimina el usuario y vuelve a crearlo.");
+      return idtAccion("update", {idToken:res.j.idToken, password:nueva, returnSecureToken:false}).then(function(res2){
+        if(!res2.ok) throw new Error(mapaErrorAuth(res2.j));
+        return restPut(RUTA_USERS + "/" + uid + "/password", nueva);
+      });
+    });
+  });
+}
+
+/* ============ PERFILES Y ROLES (RTDB) ============ */
+function asegurarPerfil(){
+  var uid = Auth.uid();
+  if(!uid) return Promise.resolve(null);
+  return restGet(RUTA_USERS + "/" + uid).then(function(p){
+    if(p && p.role){
+      if(!p.usuario && p.email) p.usuario = String(p.email).split("@")[0];
+      if(!p.nombre) p.nombre = p.usuario || "Usuario";
+      Auth.perfil = p; Auth.persistir();
+      return p;
+    }
+    /* Sin perfil: NO se auto-crea (solo la pestaña «Primer acceso» crea el admin) */
+    Auth.perfil = null;
+    return null;
+  }).catch(function(){ Auth.perfil = null; return null; });
+}
+function adminListarUsuarios(){
+  return restGet(RUTA_USERS).then(function(d){
+    if(!d) return [];
+    return Object.keys(d).map(function(uid){
+      var u = d[uid] || {};
+      if(!u.usuario && u.email) u.usuario = String(u.email).split("@")[0];
+      return {
+        uid: uid, usuario: u.usuario || "(sin usuario)", nombre: u.nombre || u.usuario || "—",
+        role: u.role || "sin rol", creadoEn: u.creadoEn || null, activo: u.activo !== false
+      };
+    });
+  });
+}
+/** Crea el perfil completo de un usuario recién dado de alta */
+function adminGuardarPerfil(uid, usuario, nombre, role, password){
+  var perfil = {
+    usuario: normalizarUsuario(usuario),
+    nombre: String(nombre||"").trim() || normalizarUsuario(usuario),
+    role: role, password: password, activo: true,
+    creadoEn: new Date().toISOString()
+  };
+  return restPut(RUTA_USERS + "/" + uid, perfil);
+}
+function adminCambiarRole(uid, role){
+  return restPut(RUTA_USERS + "/" + uid + "/role", role);
+}
+function adminEliminarPerfil(uid){
+  return restDelete(RUTA_USERS + "/" + uid);
+}
+
+/* ============ PANTALLAS DE SESIÓN ============ */
+function mostrarLogin(mensaje){
+  $("#app").style.display = "none";
+  $("#loginView").style.display = "flex";
+  $("#loginCard").style.display = "";
+  $("#pendCard").style.display = "none";
+  $("#waitCard").style.display = "none";
+  setLoginModo(loginModo || "entrar");
+  var err = $("#loginError");
+  if(mensaje){ err.textContent = mensaje; err.hidden = false; } else { err.hidden = true; }
+  document.title = "Acceso · Perfil Competencial LOMLOE";
+}
+function mostrarEspera(){
+  $("#app").style.display = "none";
+  $("#loginView").style.display = "flex";
+  $("#loginCard").style.display = "none";
+  $("#pendCard").style.display = "none";
+  $("#waitCard").style.display = "";
+}
+function mostrarPendiente(){
+  $("#app").style.display = "none";
+  $("#loginView").style.display = "flex";
+  $("#loginCard").style.display = "none";
+  $("#waitCard").style.display = "none";
+  $("#pendCard").style.display = "";
+  $("#pendTitle").textContent = "Cuenta sin perfil asignado";
+  $("#pendMsg").textContent = "Tu cuenta existe pero todavía no tiene perfil en la aplicación (solo la primera cuenta puede crearse sola). Pide al administrador que cree tu usuario desde «Administración → Usuarios», enviándole este identificador técnico si lo necesita:";
+  $("#pendUidBox").style.display = "";
+  $("#pendUid").textContent = Auth.uid() || "—";
+}
+function mostrarBloqueado(){
+  $("#app").style.display = "none";
+  $("#loginView").style.display = "flex";
+  $("#loginCard").style.display = "none";
+  $("#waitCard").style.display = "none";
+  $("#pendCard").style.display = "";
+  $("#pendTitle").textContent = "Cuenta desactivada";
+  $("#pendMsg").textContent = "Tu acceso ha sido desactivado por el administrador. Si crees que es un error, contacta con él para que reactive tu cuenta.";
+  $("#pendUidBox").style.display = "none";
+}
+function mostrarApp(){
+  $("#loginView").style.display = "none";
+  $("#app").style.display = "";
+  document.title = "Perfil Competencial LOMLOE · IES";
+  actualizarChipUsuario();
+}
+function actualizarChipUsuario(){
+  var av = $("#ucAvatar"), em = $("#ucEmail"), ro = $("#ucRole");
+  if(!av) return;
+  var p = Auth.perfil || {};
+  var quien = p.nombre || p.usuario || "Usuario";
+  var rol = Auth.esAdmin() ? "Administrador/a" : "Usuario/a";
+  av.textContent = iniciales(quien);
+  em.textContent = quien;
+  ro.textContent = rol;
+  ro.className = Auth.esAdmin() ? "es-admin" : "";
+}
+
+/* ============ FLUJO TRAS LOGIN ============ */
+function flujoPostLogin(msgError){
+  mostrarEspera();
+  return Auth.token().then(function(tk){
+    if(!tk){
+      authSalir();
+      mostrarLogin(msgError || "Tu sesión ha caducado. Vuelve a entrar.");
+      return null;
+    }
+    return asegurarPerfil().then(function(perfil){
+      if(!perfil){
+        /* Autenticado pero sin perfil (no es el primer usuario) */
+        mostrarPendiente();
+        return null;
+      }
+      if(perfil.activo === false){
+        mostrarBloqueado();
+        return null;
+      }
+      mostrarApp();
+      var v = (location.hash||"").replace(/^#\/?/,"") || "inicio";
+      if(!RENDER[v]) v = "inicio";
+      S.view = v;
+      renderActual();
+      refrescarEstadoNubeUI();
+      if(S.cola.length && navigator.onLine) setTimeout(function(){ sincronizar(true); }, 2000);
+      return perfil;
+    });
+  }).catch(function(e){
+    authSalir();
+    mostrarLogin("No se pudo conectar con Firebase: " + (e.message||e));
+    return null;
+  });
+}
+
+/* =====================================================================
+   views.js · Toasts, diálogos, navegación, Inicio, Resumen (matriz),
+   Por competencia y diálogo de nube — con permisos según el rol
+   ===================================================================== */
+
+
+/* ============ UI: TOASTS, DIÁLOGOS, NAVEGACIÓN ============ */
+function toast(msg, tipo){
+  var t = document.createElement("div");
+  t.className = "toast " + (tipo||"");
+  t.innerHTML = icon(tipo==="ok"?"check":tipo==="err"?"alert":tipo==="warn"?"info":"info") + "<span>"+esc(msg)+"</span>";
+  $("#toasts").appendChild(t);
+  setTimeout(function(){ t.classList.add("out"); setTimeout(function(){ t.remove(); }, 320); }, 3800);
+}
+function openDialog(html, ancho){
+  $("#dlgRoot").innerHTML = '<div class="ovl" data-action="cerrarDlg"><div class="dlg'+(ancho?" wide":"")+'" role="dialog" aria-modal="true">'+html+'</div></div>';
+}
+function cerrarDlg(){ $("#dlgRoot").innerHTML=""; }
+function dlgHead(titulo, sub){
+  return '<div class="dlg-head"><div><h3>'+titulo+'</h3>'+(sub?'<div class="sub">'+sub+'</div>':"")+'</div><button class="iconbtn x" data-action="cerrarDlg" aria-label="Cerrar">'+icon("x")+'</button></div>';
+}
+var _confirmCb = null;
+function confirmar(titulo, texto, etiquetaOk, cb, sinPeligro){
+  _confirmCb = cb;
+  openDialog(
+    dlgHead(esc(titulo)) +
+    '<div class="dlg-body"><p style="margin:0 0 6px; color:var(--muted); font-size:13.5px">'+texto+'</p></div>' +
+    '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+    '<button class="btn '+(sinPeligro?"btn-primary":"btn-danger")+'" data-action="confirmOk">'+esc(etiquetaOk||"Confirmar")+'</button></div>'
+  );
+}
+
+var VISTAS = [
+  { id:"inicio",       nombre:"Inicio",           icono:"home" },
+  { id:"resumen",      nombre:"Resumen",          icono:"grid" },
+  { id:"competencias", nombre:"Por competencia",  icono:"layers" },
+  { id:"alumno",       nombre:"Alumno",           icono:"user" },
+  { id:"stats",        nombre:"Estadísticas",     icono:"chart" },
+  { id:"admin",        nombre:"Administración",   icono:"shield", soloAdmin:true },
+  { id:"ajustes",      nombre:"Ajustes",          icono:"gear" }
+];
+function vistasPermitidas(){
+  return VISTAS.filter(function(v){ return !v.soloAdmin || Auth.esAdmin(); });
+}
+function renderNav(){
+  var permitidas = vistasPermitidas();
+  $("#nav").innerHTML = permitidas.map(function(v){
+    return '<button class="navitem'+(S.view===v.id?" active":"")+'" data-action="ir" data-view="'+v.id+'">'+icon(v.icono)+'<span>'+v.nombre+'</span></button>';
+  }).join("");
+  $("#bottomnav").innerHTML = permitidas.filter(function(v){return v.id!=="ajustes" && v.id!=="admin";}).map(function(v){
+    return '<button class="bn'+(S.view===v.id?" active":"")+'" data-action="ir" data-view="'+v.id+'"><span class="bnico">'+icon(v.icono,20)+'</span>'+v.nombre+'</button>';
+  }).join("");
+  $("#menuBtn").innerHTML = icon("menu");
+  $("#themeBtn").innerHTML = icon(temaEfectivo()==="dark"?"sun":"moon");
+  $("#brandLogo").innerHTML = icon("chart",22);
+}
+function temaEfectivo(){
+  if(S.theme==="auto") return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return S.theme;
+}
+function aplicarTema(){
+  document.documentElement.setAttribute("data-theme", temaEfectivo());
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", temaEfectivo()==="dark" ? "#0b1220" : "#0b1f4b");
+  var btn = $("#themeBtn"); if(btn) btn.innerHTML = icon(temaEfectivo()==="dark"?"sun":"moon");
+}
+function renderTopbar(){
+  var titulos = {inicio:"Perfil Competencial", resumen:"Resumen del grupo", competencias:"Análisis por competencia", alumno:"Ficha del alumno", stats:"Estadísticas del grupo", admin:"Administración", ajustes:"Ajustes"};
+  $("#topTitle").textContent = titulos[S.view] || "Perfil Competencial";
+  var ds = grupoActivo();
+  var chip = $("#groupChip");
+  if(ds && ["resumen","competencias","alumno","stats"].indexOf(S.view)>=0){
+    chip.style.display = "";
+    chip.innerHTML = icon("users",13) + esc(grupoTitulo(ds));
+  }else{ chip.style.display = "none"; }
+}
+function renderActual(){
+  renderNav(); renderTopbar(); aplicarTema();
+  $all(".view").forEach(function(v){ v.classList.remove("active"); });
+  var sec = $("#view-"+S.view);
+  if(sec){
+    sec.classList.add("active");
+    var fn = RENDER[S.view];
+    if(fn) sec.innerHTML = fn();
+    if(S.view==="stats") requestAnimationFrame(function(){ dibujarRadarGrupo(); });
+    if(S.view==="alumno") requestAnimationFrame(function(){ dibujarRadarAlumno(); });
+    if(S.view==="admin") cargarUsuariosAdmin();
+  }
+  actualizarChipUsuario();
+  refrescarEstadoNubeUI();
+  try{ if(history.replaceState) history.replaceState(null,"","#/"+S.view); }catch(e){}
+}
+function ir(view){
+  if(!RENDER[view]) view = "inicio";
+  var meta = VISTAS.filter(function(v){ return v.id===view; })[0];
+  if(meta && meta.soloAdmin && !Auth.esAdmin()) view = "inicio";
+  S.view = view;
+  if(["resumen","competencias","alumno","stats"].indexOf(view)>=0) asegurarGrupoActivo();
+  document.body.classList.remove("nav-open");
+  renderActual();
+}
+
+/* ============ VISTA: INICIO ============ */
+function sinDatos(titulo, texto){
+  var admin = Auth.esAdmin();
+  var acciones = admin
+    ? '<button class="btn btn-primary" data-action="importarClick">'+icon("upload")+' Importar XML de Séneca</button>'
+    : '<button class="btn btn-primary" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar grupos desde la nube</button>';
+  return '<div class="card"><div class="empty-hero">' +
+    '<div class="big">'+icon("chart",40)+'</div>' +
+    '<h2 style="font-size:20px">'+titulo+'</h2>' +
+    '<p style="color:var(--muted); margin:0; font-size:13.5px">'+texto+'</p>' +
+    acciones +
+    '<div class="steps">' +
+      '<div class="step"><b><span class="n">1</span> '+(admin?"Exporta":"Solicita")+'</b>'+(admin?"En Séneca: Alumnado → Evaluación de competencias → Exportar XML.":"Pide al administrador que importe el informe de tu grupo.")+'</div>' +
+      '<div class="step"><b><span class="n">2</span> '+(admin?"Importa":"Descarga")+'</b>'+(admin?"Carga aquí el .xml (uno o varios grupos).":"Descarga los grupos desde la nube con un clic.")+'</div>' +
+      '<div class="step"><b><span class="n">3</span> Analiza</b>Matriz clicable, fichas por alumno, estadísticas y PDF.</div>' +
+      '<div class="step"><b><span class="n">4</span> Sincroniza</b>Todo se guarda solo en Firebase, separado por centro y curso.</div>' +
+    '</div></div></div>';
+}
+function renderInicio(){
+  var gs = gruposLocales();
+  var admin = Auth.esAdmin();
+  var h = '';
+  h += '<div class="pagehead"><div><h2>Mis grupos</h2><div class="sub">'+(admin?"Los cambios se sincronizan automáticamente con la nube":"Perfil de consulta: los datos los gestiona el administrador")+' · Centro: '+esc(centroActualNombre())+'</div></div>' +
+       '<div class="head-actions">' +
+       (admin? '<button class="btn btn-soft" data-action="abrirNube">'+icon("cloud")+' Nube Firebase</button>' +
+               '<button class="btn btn-primary" data-action="importarClick">'+icon("plus")+' Importar XML</button>'
+             : '<button class="btn btn-primary" data-action="descargarDeNube">'+icon("cloudDown")+' Actualizar desde la nube</button>') +
+       '</div></div>';
+  if(gs.length===0){
+    h += sinDatos("Aún no hay grupos disponibles", admin
+      ? "Importa un informe de Séneca (NIVELES_COMPETENCIALES) para empezar. Todo funciona también sin conexión."
+      : "Todavía no has descargado ningún grupo. Pulsa el botón para traerlos de la nube.");
+  }else{
+    h += '<div class="grid-cursos">' + gs.map(function(ds){
+      var enNube = !!S.nubeGuardados[ds.key];
+      var st = estadisticasGrupo(ds.alumnos);
+      return '<div class="card curso-card">' +
+        (enNube ? '<span class="flag">EN LA NUBE</span>' : "") +
+        '<div><h3>'+esc(ds.meta.unidadNombre)+'</h3><div style="font-size:12px;color:var(--muted)">'+esc(ds.meta.cursoGeneral)+'</div></div>' +
+        '<div class="meta">' +
+          '<span>'+icon("cal",14)+' '+esc(ds.meta.anno)+' · Período '+esc(ds.meta.periodo)+(ds.meta.convocatoria? ' · '+esc(ds.meta.convocatoria):"")+'</span>' +
+          '<span>'+icon("users",14)+' '+ds.alumnos.length+' alumnos · '+st.totalDescriptores+' descriptores</span>' +
+          '<span>'+icon("refresh",14)+' Importado '+haceTiempo(ds.meta.fechaCarga)+'</span>' +
+        '</div>' +
+        '<div class="actions">' +
+          '<button class="btn btn-primary btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'">'+icon("grid",14)+' Abrir</button>' +
+          (admin? '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="Eliminar curso (dispositivo y nube)">'+icon("trash",15)+'</button>' : "") +
+        '</div></div>';
+    }).join("") + '</div>';
+    if(admin){
+      h += '<div class="dropzone" id="dz" data-action="importarClick" style="margin-top:18px">' +
+        '<div class="dz-ico">'+icon("upload",24)+'</div><b>Importar más informes</b>' +
+        '<div class="dz-sub">Arrastra aquí archivos .xml de Séneca o haz clic para seleccionarlos · Compatible con varios grupos por archivo</div></div>';
+    }
+  }
+  return h;
+}
+function centroActualNombre(){
+  var ds = grupoActivo() || gruposLocales()[0];
+  return ds ? (ds.meta.nombreCentro || ds.meta.codigoCentro) : "—";
+}
+
+/* ============ VISTA: RESUMEN (MATRIZ) ============ */
+function renderResumen(){
+  var ds = asegurarGrupoActivo();
+  if(!ds) return sinDatos("Sin grupo seleccionado", Auth.esAdmin()?"Importa un XML o selecciona un grupo en Inicio.":"Descarga los grupos desde la nube o selecciona uno en Inicio.");
+  var filtro = (S.filtroResumen||"").toLowerCase();
+  var alumnos = ds.alumnos.filter(function(a){
+    return !filtro || nombreAlumno(a).toLowerCase().indexOf(filtro)>=0;
+  });
+  var st = estadisticasGrupo(ds.alumnos);
+  var h = '';
+  h += '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Matriz de competencias</h2>' +
+       '<div class="sub">'+esc(grupoEtiqueta(ds))+' · '+esc(ds.meta.anno)+' · Período '+esc(ds.meta.periodo)+(ds.meta.convocatoria?' · '+esc(ds.meta.convocatoria):"")+' · '+ds.alumnos.length+' alumnos</div></div>' +
+       '<div class="head-actions"><button class="btn" data-action="imprimirResumen">'+icon("print")+' Exportar PDF</button></div></div>';
+  h += '<div class="toolbar-row">' +
+    '<div class="search">'+icon("search",16)+'<input class="inp" id="filtroRes" placeholder="Buscar alumno…" value="'+esc(S.filtroResumen)+'" data-input="filtro"></div>' +
+    '<span class="count">'+alumnos.length+' de '+ds.alumnos.length+' alumnos</span>' +
+    '<span style="margin-left:auto" class="count">Media del grupo: '+fmtNum(st.mediaGlobal)+' / 5</span></div>';
+  h += '<div class="table-wrap"><table class="mx"><thead><tr>' +
+    '<th class="th-alu">Alumno/a</th>' +
+    COMPETENCIAS.map(function(c){
+      return '<th title="'+esc(c.nombre)+'"><span class="compdot" style="background:'+c.color+'"></span>'+c.code+'</th>';
+    }).join("") +
+    '<th>Media</th></tr></thead><tbody>';
+  alumnos.forEach(function(a){
+    var idx = ds.alumnos.indexOf(a);
+    var pr = promediosAlumno(a);
+    var mg = mediaGlobalAlumno(a);
+    h += '<tr><td class="c-alu" data-action="abrirFicha" data-idx="'+idx+'" title="Ver ficha de '+esc(nombreAlumno(a))+'">'+esc(nombreAlumno(a))+'</td>';
+    COMPETENCIAS.forEach(function(c){
+      var p = pr[c.code];
+      h += '<td class="c-cell"><button class="cellbtn" data-action="cellDetalle" data-idx="'+idx+'" data-comp="'+c.code+'" title="'+c.code+' · '+fmtNum(p.media)+'"'+(p.media==null?' style="opacity:.45"':"")+'>'+pillNivel(p.code)+'</button></td>';
+    });
+    h += '<td class="c-cell">'+pillNivel(mg.code)+'<div class="media-num">'+fmtNum(mg.media)+'</div></td></tr>';
+  });
+  if(alumnos.length===0) h += '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">Ningún alumno coincide con la búsqueda.</td></tr>';
+  h += '</tbody><tfoot><tr><td class="tf-alu">Media del grupo</td>';
+  COMPETENCIAS.forEach(function(c){
+    var m = st.medias[c.code];
+    var nv = m==null? null : nivelPorEscala(m);
+    h += '<td>'+(nv?pillNivel(nv.code,"sm"):'<span class="media-num">—</span>')+'<div class="media-num">'+fmtNum(m)+'</div></td>';
+  });
+  h += '<td><div class="media-num" style="font-weight:800">'+fmtNum(st.mediaGlobal)+'</div></td></tr></tfoot></table></div>';
+  h += '<div class="legend"><b style="font-size:11px;letter-spacing:.4px">NIVELES:</b>' +
+    NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") +
+    '<span class="it" style="margin-left:auto">'+icon("info",13)+' Pulsa una celda para ver sus descriptores; pulsa el nombre para abrir la ficha.</span></div>';
+  return h;
+}
+
+/* ============ VISTA: POR COMPETENCIA ============ */
+function renderCompetencias(){
+  var ds = asegurarGrupoActivo();
+  if(!ds) return sinDatos("Sin grupo seleccionado", Auth.esAdmin()?"Importa un XML o selecciona un grupo en Inicio.":"Descarga los grupos desde la nube o selecciona uno en Inicio.");
+  var st = estadisticasGrupo(ds.alumnos);
+  var h = '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Análisis por competencia</h2>' +
+    '<div class="sub">Pulsa un descriptor para ver qué alumnado tiene cada nivel</div></div></div><div class="comp-list">';
+  COMPETENCIAS.forEach(function(c){
+    var nums = descriptoresDeCompetencia(ds.alumnos, c.code);
+    var media = st.medias[c.code];
+    var nv = media==null? null : nivelPorEscala(media);
+    var pctAltos = st.porcentajeAltos[c.code];
+    h += '<div class="card comp-card"><div class="comp-head">' +
+      '<div class="comp-ico" style="background:'+c.color+';font-size:'+(c.code.length>3?"10px":"11.5px")+'">'+c.code+'</div>' +
+      '<div><h3>'+esc(c.nombre)+'</h3><div class="sub">'+nums.length+' descriptores evaluados</div></div>' +
+      '<div class="right">'+(nv?pillNivel(nv.code,"big"):"")+'<div style="text-align:center"><b style="font-size:15px">'+fmtNum(media)+'</b><div class="media-num">media /5</div></div>' +
+      '<div style="text-align:center"><b style="font-size:15px">'+(pctAltos==null?"—":Math.round(pctAltos)+"%")+'</b><div class="media-num">NT o SB</div></div></div></div>';
+    h += '<div>';
+    nums.forEach(function(num){
+      var code = c.code + num;
+      var conteo = {IN:0,SU:0,BI:0,NT:0,SB:0};
+      ds.alumnos.forEach(function(a){ var v=a.descriptores[code]; if(v){ var n=NIVELES_MAP[v]; if(n&&n.cualitativo) conteo[n.code]++; } });
+      var total = conteo.IN+conteo.SU+conteo.BI+conteo.NT+conteo.SB;
+      h += '<button class="desc-row" data-action="descDetalle" data-comp="'+c.code+'" data-num="'+num+'">' +
+        '<span class="desc-code" style="color:'+c.color+'">'+code+'</span>' +
+        '<div class="distbar">' + NIVELES_CUAL.map(function(n){
+            var pct = total? conteo[n.code]/total*100 : 0;
+            return '<span class="seg s-'+n.code+'" style="width:'+pct.toFixed(1)+'%" title="'+n.nombre+': '+conteo[n.code]+'"></span>';
+          }).join("") + '</div>' +
+        '<div class="desc-counts">' + NIVELES_CUAL.map(function(n){
+            return conteo[n.code] ? '<span class="pill sm lvl-'+n.code+'">'+conteo[n.code]+'</span>' : "";
+          }).join("") + '</div>' +
+        '</button>';
+    });
+    if(nums.length===0) h += '<div style="padding:14px 16px; color:var(--muted); font-size:12.5px">Sin descriptores de esta competencia.</div>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+/* ============ DIÁLOGOS DE DETALLE ============ */
+function dlgCellDetalle(idx, comp){
+  var ds = grupoActivo(); if(!ds) return;
+  var a = ds.alumnos[idx]; if(!a) return;
+  var c = COMP_MAP[comp];
+  var pr = promediosAlumno(a)[comp];
+  var nums = descriptoresDeCompetencia(ds.alumnos, comp);
+  var h = dlgHead('<span style="color:'+c.color+'">'+comp+'</span> · '+esc(nombreAlumno(a)), esc(c.nombre)+' · '+esc(grupoTitulo(ds)));
+  h += '<div class="dlg-body"><div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">' +
+    '<span class="media-num" style="font-size:12px">MEDIA DE LA COMPETENCIA</span>' +
+    '<b style="font-size:17px">'+fmtNum(pr.media)+' /5</b>' + pillNivel(pr.code) + '</div><div class="dlist">';
+  nums.forEach(function(num){
+    var code = comp+num;
+    var nivelId = a.descriptores[code];
+    var niv = nivelId ? NIVELES_MAP[nivelId] : null;
+    h += '<div class="drow"><span class="desc-code" style="color:'+c.color+'">'+code+'</span>' +
+      '<div style="flex:1"><div style="height:6px;border-radius:99px;background:var(--card-2)"><div style="width:'+((niv?niv.escala:0)/5*100)+'%;height:100%;border-radius:99px;background:'+c.color+'"></div></div></div>' +
+      '<span class="media-num">'+(niv?fmtNum(niv.escala,1):"—")+'</span>' + (niv?pillNivel(niv.code):'<span class="pill lvl-NA">—</span>') + '</div>';
+  });
+  h += '</div></div><div class="dlg-foot"><button class="btn btn-soft" data-action="abrirFichaDlg" data-idx="'+idx+'">'+icon("user",14)+' Ver ficha completa</button>' +
+       '<button class="btn" data-action="cerrarDlg">Cerrar</button></div>';
+  openDialog(h);
+}
+function dlgDescDetalle(comp, num){
+  var ds = grupoActivo(); if(!ds) return;
+  var c = COMP_MAP[comp];
+  var code = comp+num;
+  var porNivel = {};
+  NIVELES_CUAL.forEach(function(n){ porNivel[n.code]=[]; });
+  ds.alumnos.forEach(function(a){
+    var v = a.descriptores[code];
+    var n = v ? NIVELES_MAP[v] : null;
+    if(n && n.cualitativo) porNivel[n.code].push(nombreAlumno(a));
+  });
+  var h = dlgHead('Descriptor <span style="color:'+c.color+'">'+code+'</span>', esc(c.nombre)+' · '+ds.alumnos.length+' alumnos · '+esc(grupoTitulo(ds)));
+  h += '<div class="dlg-body"><div class="dlist">';
+  NIVELES_CUAL.slice().reverse().forEach(function(n){
+    var lista = porNivel[n.code];
+    h += '<div class="drow" style="align-items:flex-start"><span class="pill lvl-'+n.code+'">'+n.code+'</span>' +
+      '<div style="flex:1"><b style="font-size:12.5px">'+n.nombre+'</b>' +
+      (lista.length? '<div style="font-size:12.5px; color:var(--muted)">'+lista.map(esc).join(" · ")+'</div>' : '<div style="font-size:12px; color:var(--muted)">Ningún alumno</div>') + '</div>' +
+      '<span class="pill sm lvl-'+n.code+'">'+lista.length+'</span></div>';
+  });
+  h += '</div></div><div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cerrar</button></div>';
+  openDialog(h, true);
+}
+function dlgNube(){
+  openDialog(dlgHead(icon("cloud",20)+' Nube Firebase', 'Ruta: '+esc(DB_ROOT)+'/{centro}/grupos · separada por centro y curso') +
+    '<div class="dlg-body" id="nubeBody"><div style="color:var(--muted); font-size:13px">Cargando grupos de la nube…</div></div>' +
+    '<div class="dlg-foot"><button class="btn" data-action="nubeRefrescar">'+icon("refresh",14)+' Actualizar</button>' +
+    '<button class="btn" data-action="cerrarDlg">Cerrar</button></div>', true);
+  refrescarNubeDlg(null);
+}
+function refrescarNubeDlg(centro){
+  var body = $("#nubeBody"); if(!body) return;
+  if(!navigator.onLine){ body.innerHTML = '<div class="hint warn">Sin conexión. Los cambios pendientes ('+S.cola.length+') se enviarán automáticamente al reconectarte.</div>'; return; }
+  var admin = Auth.esAdmin();
+  var pide = centro ? nubeListar(centro).then(function(l){ return {centro:centro, lista:l}; }) : nubeListarTodos().then(function(l){ return {centro:null, lista:l}; });
+  pide.then(function(res){
+    var lista = res.lista || [];
+    lista.forEach(function(g){ if(g && g.key) S.nubeGuardados[g.key] = (g.meta && g.meta.fechaCarga) || S.nubeGuardados[g.key] || new Date().toISOString(); });
+    guardarEstado();
+    if(!$("#nubeBody")) return;
+    var h = '<div class="hint" style="margin-bottom:10px">'+(res.centro? 'Centro <b>'+esc(res.centro)+'</b> · ' : "")+lista.length+' grupo/s en la nube · Cambios recientes de cualquier dispositivo aparecen aquí</div>';
+    if(lista.length===0) h += '<div style="color:var(--muted); font-size:13px; padding:10px 0">Todavía no hay grupos guardados en la nube.</div>';
+    lista.forEach(function(g){
+      h += '<div class="nube-row"><div class="info"><b>'+esc(g.meta.unidadNombre)+'</b>' +
+        '<span>'+esc(g.meta.cursoGeneral||"")+' · '+esc(g.meta.anno)+' · P'+esc(g.meta.periodo)+(g.meta.convocatoria?' · '+esc(g.meta.convocatoria):"")+' · '+(g.meta.totalAlumnos||g.alumnos.length)+' alumnos</span></div>' +
+        '<button class="btn btn-sm btn-soft" data-action="nubeCargar" data-centro="'+esc(g.meta.codigoCentro)+'" data-key="'+esc(g.key)+'">'+icon("cloudDown",14)+' Cargar</button>' +
+        (admin? '<button class="btn btn-sm btn-icon" data-action="nubeEliminar" data-centro="'+esc(g.meta.codigoCentro)+'" data-key="'+esc(g.key)+'" title="Eliminar de la nube">'+icon("trash",15)+'</button>' : "") +
+        '</div>';
+    });
+    body.innerHTML = h;
+  }).catch(function(e2){
+    if($("#nubeBody")) $("#nubeBody").innerHTML = '<div class="hint warn"><b>No se pudo acceder a la nube:</b> '+esc(e2.message||e2)+
+      '<br><br>Comprueba las reglas de seguridad en Ajustes y que tu cuenta tenga perfil asignado.</div>';
+  });
+}
+
+/* =====================================================================
+   views2.js · Ficha del alumno, Estadísticas, Administración (roles y
+   cursos) y Ajustes — solo los administradores ven la gestión
+   ===================================================================== */
+
+
+/* ============ VISTA: FICHA ALUMNO ============ */
+function renderAlumno(){
+  var ds = asegurarGrupoActivo();
+  if(!ds) return sinDatos("Sin grupo seleccionado", Auth.esAdmin()?"Importa un XML o selecciona un grupo en Inicio.":"Descarga los grupos desde la nube o selecciona uno en Inicio.");
+  if(ds.alumnos.length===0) return sinDatos("Grupo vacío","Este grupo no contiene alumnos.");
+  if(S.alumnoIdx>=ds.alumnos.length) S.alumnoIdx = 0;
+  var a = ds.alumnos[S.alumnoIdx];
+  var pr = promediosAlumno(a);
+  var mg = mediaGlobalAlumno(a);
+  var mejor = null, baja = null;
+  COMPETENCIAS.forEach(function(c){
+    if(pr[c.code].media==null) return;
+    if(!mejor || pr[c.code].media > pr[mejor].media) mejor = c.code;
+    if(!baja || pr[c.code].media < pr[baja].media) baja = c.code;
+  });
+  var nDesc = Object.keys(a.descriptores||{}).length;
+  var h = '';
+  h += '<div class="pagehead"><div><h2>Ficha competencial individual</h2><div class="sub">'+esc(grupoTitulo(ds))+' · Alumno '+(S.alumnoIdx+1)+' de '+ds.alumnos.length+'</div></div>' +
+       '<div class="head-actions"><button class="btn" data-action="imprimirAlumno">'+icon("print")+' Informe PDF</button></div></div>';
+  h += '<div class="alu-nav">' +
+    '<button class="btn btn-sm" data-action="prevAlumno"'+(S.alumnoIdx<=0?" disabled":"")+'>'+icon("left",15)+' Anterior</button>' +
+    '<select class="inp" style="max-width:330px" data-input="selAlumno">' +
+      ds.alumnos.map(function(x,i){ return '<option value="'+i+'"'+(i===S.alumnoIdx?" selected":"")+'>'+esc(nombreAlumno(x))+'</option>'; }).join("") +
+    '</select>' +
+    '<button class="btn btn-sm" data-action="nextAlumno"'+(S.alumnoIdx>=ds.alumnos.length-1?" disabled":"")+'">Siguiente '+icon("right",15)+'</button></div>';
+  h += '<div class="alu-grid">';
+  h += '<div style="display:flex; flex-direction:column; gap:14px">';
+  h += '<div class="card alu-card"><div class="alu-hero">' +
+    '<div class="avatar">'+esc(iniciales(nombreAlumno(a)))+'</div>' +
+    '<h3>'+esc(nombreAlumno(a))+'</h3>' +
+    '<div class="sub">'+esc(ds.meta.cursoGeneral)+' · Grupo '+esc(ds.meta.unidadNombre)+'</div>' +
+    '<div style="margin-top:4px">'+pillNivel(mg.code,"big")+'</div></div>' +
+    '<div class="alu-kpis">' +
+      '<div class="alu-kpi"><b>'+fmtNum(mg.media)+'</b><span>Media global /5</span></div>' +
+      '<div class="alu-kpi"><b>'+nDesc+'</b><span>Descriptores</span></div>' +
+      '<div class="alu-kpi"><b style="color:'+(mejor?COMP_MAP[mejor].color:"inherit")+'">'+(mejor||"—")+'</b><span>Más fuerte</span></div>' +
+      '<div class="alu-kpi"><b style="color:'+(baja?COMP_MAP[baja].color:"inherit")+'">'+(baja||"—")+'</b><span>Reforzar</span></div>' +
+    '</div></div>';
+  h += '<div class="card"><div class="card-title">'+icon("chart",16)+' Perfil competencial</div><div class="canvas-box"><canvas id="radarAlumno" width="320" height="320" style="width:min(320px,100%)"></canvas></div></div>';
+  h += '</div>';
+  h += '<div class="alu-comps">';
+  COMPETENCIAS.forEach(function(c){
+    var p = pr[c.code];
+    h += '<div class="card alu-comp"><div class="row1">' +
+      '<span class="comp-ico" style="width:30px;height:30px;font-size:'+(c.code.length>3?"7.5px":"9.5px")+';letter-spacing:0;border-radius:9px;background:'+c.color+'">'+c.code+'</span>' +
+      '<h4>'+esc(c.nombre)+'</h4><div class="right"><span class="media-num">'+fmtNum(p.media)+' /5</span>'+pillNivel(p.code)+'</div></div>' +
+      '<div class="alu-descs">';
+    var nums = descriptoresDeCompetencia(ds.alumnos, c.code);
+    nums.forEach(function(num){
+      var code = c.code+num;
+      var nivelId = a.descriptores[code];
+      var niv = nivelId ? NIVELES_MAP[nivelId] : null;
+      h += '<span class="dchip"><span style="color:'+c.color+'">'+code+'</span>'+(niv?pillNivel(niv.code,"sm"):'<span class="pill sm lvl-NA">—</span>')+'</span>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+/* ============ VISTA: ESTADÍSTICAS ============ */
+function renderStats(){
+  var ds = asegurarGrupoActivo();
+  if(!ds) return sinDatos("Sin grupo seleccionado", Auth.esAdmin()?"Importa un XML o selecciona un grupo en Inicio.":"Descarga los grupos desde la nube o selecciona uno en Inicio.");
+  var st = estadisticasGrupo(ds.alumnos);
+  var h = '';
+  h += '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Estadísticas de grupo</h2>' +
+       '<div class="sub">'+st.totalAlumnos+' alumnos · '+st.totalDescriptores+' descriptores evaluados · Media global '+fmtNum(st.mediaGlobal)+' / 5</div></div>' +
+       '<div class="head-actions"><button class="btn" data-action="imprimirStats">'+icon("print")+' Exportar PDF</button></div></div>';
+  h += '<div class="kpi-grid">' +
+    '<div class="card kpi"><div class="lab">'+icon("users",13)+' Alumnos</div><div class="val">'+st.totalAlumnos+'</div></div>' +
+    '<div class="card kpi"><div class="lab">'+icon("chart",13)+' Media global</div><div class="val">'+fmtNum(st.mediaGlobal)+' <small>/ 5</small></div></div>' +
+    '<div class="card kpi"><div class="lab">'+icon("check",13)+' Más fuerte</div><div class="val" style="color:'+(st.competenciaMasAlta?COMP_MAP[st.competenciaMasAlta].color:"inherit")+'">'+(st.competenciaMasAlta||"—")+' <small>'+(st.competenciaMasAlta?esc(COMP_MAP[st.competenciaMasAlta].corto):"")+'</small></div></div>' +
+    '<div class="card kpi"><div class="lab">'+icon("alert",13)+' A reforzar</div><div class="val" style="color:'+(st.competenciaMasBaja?COMP_MAP[st.competenciaMasBaja].color:"inherit")+'">'+(st.competenciaMasBaja||"—")+' <small>'+(st.competenciaMasBaja?esc(COMP_MAP[st.competenciaMasBaja].corto):"")+'</small></div></div>' +
+    '</div>';
+  h += '<div class="stats-grid">';
+  h += '<div style="display:flex; flex-direction:column; gap:14px">' +
+    '<div class="card"><div class="card-title">'+icon("chart",16)+' Radar del grupo</div><div class="canvas-box"><canvas id="radarGrupo" width="330" height="330" style="width:min(330px,100%)"></canvas></div></div>' +
+    '<div class="card"><div class="card-title">'+icon("chart",16)+' Media por competencia</div><div class="medias-rows">' +
+    COMPETENCIAS.map(function(c){
+      var m = st.medias[c.code]||0;
+      return '<div class="media-row"><span class="name"><span class="compdot" style="width:9px;height:9px;border-radius:3px;background:'+c.color+';display:inline-block"></span>'+c.code+'</span>' +
+        '<div class="bar"><i style="width:'+(m/5*100).toFixed(1)+'%;background:'+c.color+'"></i></div><span class="num">'+fmtNum(st.medias[c.code])+'</span></div>';
+    }).join("") + '</div></div></div>';
+  h += '<div style="display:flex; flex-direction:column; gap:14px">' +
+    '<div class="card"><div class="card-title">'+icon("grid",16)+' Distribución de niveles <span style="font-weight:400;color:var(--muted);font-size:12px">(nº de alumnos por nivel)</span></div><div class="medias-rows">' +
+    COMPETENCIAS.map(function(c){
+      var d = st.distribucion[c.code];
+      var total = st.totalAlumnos || 1;
+      return '<div class="media-row" style="gap:12px"><span class="name">'+c.code+'</span>' +
+        '<div class="distbar" style="height:18px">' + NIVELES_CUAL.map(function(n){
+          return '<span class="seg s-'+n.code+'" style="width:'+(d[n.code]/total*100).toFixed(1)+'%" title="'+n.nombre+': '+d[n.code]+' alumno/s"></span>';
+        }).join("") + '</div>' +
+        '<div class="desc-counts">' + NIVELES_CUAL.map(function(n){ return '<span class="pill sm lvl-'+n.code+'">'+d[n.code]+'</span>'; }).join("") + '</div></div>';
+    }).join("") +
+    '<div class="legend" style="margin-top:4px">' + NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") + '</div></div></div>' +
+    '<div class="card" style="overflow:auto"><div class="card-title">'+icon("layers",16)+' Resumen cuantitativo</div><div style="padding:10px 6px 6px"><table class="stats-t">' +
+    '<thead><tr><th>Competencia</th><th>Media /5</th><th>Nivel</th><th>% NT o SB</th></tr></thead><tbody>' +
+    COMPETENCIAS.map(function(c){
+      var m = st.medias[c.code];
+      var nv = m==null? null : nivelPorEscala(m);
+      return '<tr><td style="color:'+c.color+'">'+c.code+' <span style="color:var(--muted);font-weight:400">'+esc(c.corto)+'</span></td>' +
+        '<td>'+fmtNum(m)+'</td><td>'+(nv?pillNivel(nv.code,"sm"):"—")+'</td><td>'+(st.porcentajeAltos[c.code]==null?"—":Math.round(st.porcentajeAltos[c.code])+"%")+'</td></tr>';
+    }).join("") + '</tbody></table></div></div></div>';
+  h += '</div>';
+  return h;
+}
+
+/* ============ VISTA: ADMINISTRACIÓN (solo administradores) ============ */
+function renderAdmin(){
+  if(!Auth.esAdmin()) return sinDatos("Zona restringida","Esta pestaña solo está disponible para el perfil administrador.");
+  var gs = gruposLocales();
+  var h = '';
+  h += '<div class="pagehead"><div><h2>Administración</h2><div class="sub">Gestión de cursos/grupos y de usuarios con sus perfiles. Todo cambio se sincroniza automáticamente con la nube.</div></div>' +
+       '<div class="head-actions"><button class="btn" data-action="abrirNube">'+icon("cloud")+' Ver nube</button></div></div>';
+  h += '<div class="adm-grid">';
+
+  /* --- Cursos y grupos --- */
+  h += '<div class="card card-pad adm-sec"><h3>'+icon("book",17)+' Cursos y grupos</h3>' +
+    '<div class="desc">Cada grupo se crea al importar su XML de Séneca (separable por centro, año, evaluación y convocatoria). También puedes crear un grupo vacío o eliminar grupos completos.</div>';
+  if(gs.length===0){
+    h += '<div class="sin-usuarios">No hay grupos en este dispositivo. Importa un XML o crea uno vacío.</div>';
+  }else{
+    h += '<table class="users-t"><thead><tr><th>Grupo</th><th>Curso</th><th>Alumnos</th><th>Nube</th><th></th></tr></thead><tbody>' +
+      gs.map(function(ds){
+        var enNube = !!S.nubeGuardados[ds.key];
+        return '<tr><td><b>'+esc(ds.meta.unidadNombre)+'</b><div class="uuid">'+esc(ds.key)+'</div></td>' +
+          '<td>'+esc(ds.meta.cursoGeneral)+'</td><td>'+ds.alumnos.length+'</td>' +
+          '<td>'+(enNube? '<span class="pill lvl-SB sm">SÍ</span>' : '<span class="pill lvl-NA sm">NO</span>')+'</td>' +
+          '<td style="text-align:right"><button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="Eliminar curso (dispositivo y nube)">'+icon("trash",15)+'</button></td></tr>';
+      }).join("") + '</tbody></table>';
+  }
+  h += '<div class="rule-head"><b>Importar XML</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
+    '<button class="btn btn-primary btn-sm" data-action="importarClick">'+icon("upload",14)+' Importar XML</button>' +
+    '<button class="btn btn-sm" data-action="nuevoGrupoVacio">'+icon("plus",14)+' Grupo vacío</button></div></div></div>';
+
+  /* --- Usuarios --- */
+  h += '<div class="card card-pad adm-sec"><h3>'+icon("users",17)+' Usuarios y perfiles</h3>' +
+    '<div class="desc">El acceso es con <b>nombre de usuario y contraseña</b> (sin correo). El perfil <b>usuario</b> solo puede consultar contenido y exportar PDF; el perfil <b>administrador</b> gestiona cursos, importaciones y usuarios. Crea aquí cada cuenta con su contraseña inicial (mínimo 6 caracteres). Usuario admitido: 3-20 caracteres con letras, números, punto, guion o guion bajo.</div>' +
+    '<div id="usuariosTabla"><div class="sin-usuarios">Cargando usuarios…</div></div>';
+  h += '<div class="rule-head" style="margin-top:18px"><b>Añadir usuario nuevo</b></div>' +
+    '<div class="adm-form" style="margin-top:10px">' +
+      '<div class="field"><label>Nombre y apellidos</label><input class="inp" id="nuevoNombre" type="text" placeholder="p. ej. Juan Martínez López"></div>' +
+      '<div class="field"><label>Nombre de usuario</label><input class="inp" id="nuevoUsuario" type="text" autocapitalize="none" spellcheck="false" placeholder="p. ej. jmartinez"></div>' +
+      '<div class="field"><label>Contraseña inicial</label><input class="inp" id="nuevoPass" type="text" placeholder="Mínimo 6 caracteres"></div>' +
+      '<div class="field"><label>Perfil</label><select class="inp" id="nuevoRol"><option value="usuario">usuario (solo consulta)</option><option value="administrador">administrador</option></select></div>' +
+      '<div class="field"><label>&nbsp;</label><button class="btn btn-primary" data-action="adminCrearUsuario">'+icon("plus",15)+' Crear cuenta</button></div>' +
+    '</div></div>';
+
+  h += '</div>';
+  return h;
+}
+function cargarUsuariosAdmin(){
+  var cont = $("#usuariosTabla");
+  if(!cont || !Auth.esAdmin()) return;
+  adminListarUsuarios().then(function(lista){
+    if(!$("#usuariosTabla")) return;
+    if(lista.length===0){ cont.innerHTML = '<div class="sin-usuarios">Todavía no hay usuarios. La primera cuenta se crea desde la pestaña «Primer acceso» de la pantalla de entrada y queda como administradora.</div>'; return; }
+    var yo = Auth.uid();
+    lista.sort(function(a,b){ return String(a.usuario).localeCompare(String(b.usuario),"es"); });
+    var h = '<table class="users-t"><thead><tr><th>Usuario</th><th>Perfil</th><th>Estado</th><th>Creado</th><th></th></tr></thead><tbody>';
+    lista.forEach(function(u){
+      var esYo = u.uid===yo;
+      var estado = u.activo ? '<span class="pill lvl-SB sm">ACTIVA</span>' : '<span class="pill lvl-IN sm">DESACTIVADA</span>';
+      h += '<tr><td><div class="uemail">'+esc(u.nombre)+(esYo? ' <span class="pill sm lvl-SB">TÚ</span>':"")+'</div><div class="uuid">@'+esc(u.usuario)+' · '+esc(u.uid)+'</div></td>' +
+        '<td><span class="rolepill '+esc(u.role)+'">'+esc(u.role)+'</span></td>' +
+        '<td>'+estado+'</td>' +
+        '<td class="media-num">'+(u.creadoEn? fmtFecha(u.creadoEn):"—")+'</td>' +
+        '<td style="text-align:right; white-space:nowrap">' +
+        (esYo? '' :
+          '<select class="inp" style="width:auto; padding:5px 8px; font-size:12px" data-input="rolUsuario" data-uid="'+esc(u.uid)+'">' +
+            '<option value="">Cambiar a…</option><option value="usuario">usuario</option><option value="administrador">administrador</option></select> ' +
+          '<button class="btn btn-sm btn-icon" data-action="adminResetPassDlg" data-uid="'+esc(u.uid)+'" data-usuario="'+esc(u.usuario)+'" title="Restablecer contraseña">'+icon("key",15)+'</button> ' +
+          '<button class="btn btn-sm btn-icon" data-action="adminToggleActivo" data-uid="'+esc(u.uid)+'" data-usuario="'+esc(u.usuario)+'" data-activo="'+(u.activo?"1":"0")+'" title="'+(u.activo?"Desactivar acceso":"Reactivar acceso")+'">'+icon(u.activo?"x":"check",15)+'</button> ' +
+          '<button class="btn btn-sm btn-icon" data-action="adminEliminarPerfil" data-uid="'+esc(u.uid)+'" data-usuario="'+esc(u.usuario)+'" title="Eliminar perfil">'+icon("trash",15)+'</button>') +
+        '</td></tr>';
+    });
+    h += '</tbody></table>';
+    cont.innerHTML = h;
+  }).catch(function(e){
+    if($("#usuariosTabla")) $("#usuariosTabla").innerHTML = '<div class="hint warn">No se pudo cargar la lista de usuarios: '+esc(e.message||e)+'</div>';
+  });
+}
+
+/* ============ VISTA: AJUSTES ============ */
+var REGLAS_RECOMENDADAS = '{\n  "rules": {\n    ".read": false,\n    ".write": false,\n\n    "nivelesCompetencialesIESvdv": {\n      "users": {\n        ".read": "auth != null && root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\'",\n        "$uid": {\n          ".read": "auth != null && (auth.uid === $uid || root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\')",\n          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && !root.child(\'nivelesCompetencialesIESvdv/users\').exists()) || root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\')",\n          "password": { ".write": "auth != null && auth.uid === $uid" }\n        }\n      },\n      "_centros": {\n        ".read": "auth != null && (root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'usuario\' || root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\')",\n        ".write": "auth != null && root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\'"\n      },\n      "$centro": {\n        "grupos": {\n          ".read": "auth != null && (root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'usuario\' || root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\')",\n          ".write": "auth != null && root.child(\'nivelesCompetencialesIESvdv/users\').child(auth.uid).child(\'role\').val() === \'administrador\'"\n        }\n      }\n    }\n  }\n}';
+function copiarAlPortapapeles(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(txt).then(function(){ toast("Copiado al portapapeles","ok"); }, function(){ copiarFallback(txt); });
+  }
+  copiarFallback(txt);
+  return Promise.resolve();
+}
+function copiarFallback(txt){
+  var ta = document.createElement("textarea");
+  ta.value = txt; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("Copiado al portapapeles","ok"); }catch(e){ toast("No se pudo copiar","err"); }
+  ta.remove();
+}
+function renderAjustes(){
+  var cfg = obtenerConfig();
+  var e = estadoNube();
+  var admin = Auth.esAdmin();
+  var p = Auth.perfil || {};
+  var h = '';
+  h += '<div class="pagehead"><div><h2>Ajustes</h2><div class="sub">Cuenta, conexión con Firebase, instalación y copias de seguridad</div></div></div>';
+  /* Cuenta */
+  h += '<div class="card card-pad set-sec"><h3>'+icon("user",17)+' Tu cuenta</h3>' +
+    '<table class="stats-t"><tbody>' +
+    '<tr><td>Usuario</td><td style="text-align:left">@'+esc(p.usuario || "—")+'</td></tr>' +
+    '<tr><td>Nombre</td><td style="text-align:left">'+esc(p.nombre || "—")+'</td></tr>' +
+    '<tr><td>Perfil</td><td style="text-align:left"><span class="rolepill '+(admin?"admin":"usuario")+'">'+(admin?"administrador":"usuario")+'</span>'+(admin?' <span class="media-num">puede modificar datos</span>':' <span class="media-num">solo consulta</span>')+'</td></tr>' +
+    '<tr><td>Identificador (UID)</td><td style="text-align:left; font-size:11.5px; word-break:break-all; font-family:ui-monospace,monospace">'+esc(Auth.uid()||"—")+'</td></tr>' +
+    '</tbody></table>' +
+    '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">' +
+    '<button class="btn" data-action="cambiarPassDlg">'+icon("key",15)+' Cambiar contraseña</button>' +
+    '<button class="btn btn-danger" data-action="cerrarSesion">'+icon("logout",15)+' Cerrar sesión</button></div></div>';
+  /* Conexión */
+  h += '<div class="card card-pad set-sec"><h3>'+icon("cloud",17)+' Conexión con Firebase</h3>' +
+    '<div class="desc">Base de datos: Firebase <b>Realtime Database</b> · Ruta exclusiva de esta aplicación: <code>nivelesCompetencialesIESvdv/{centro}/grupos/{curso}</code></div>' +
+    '<table class="stats-t"><tbody>' +
+    '<tr><td>Proyecto</td><td style="text-align:left">'+esc(cfg.projectId||"—")+'</td></tr>' +
+    '<tr><td>Base de datos</td><td style="text-align:left; font-size:11.5px; word-break:break-all">'+esc(cfg.databaseURL||"—")+'</td></tr>' +
+    '<tr><td>Conexión</td><td style="text-align:left">'+(navigator.onLine? '<span class="pill lvl-SB">EN LÍNEA</span>' : '<span class="pill lvl-IN">SIN CONEXIÓN</span>')+'</td></tr>' +
+    '<tr><td>Estado nube</td><td style="text-align:left">'+esc(e.txt)+'</td></tr>' +
+    '<tr><td>Última sincronización</td><td style="text-align:left">'+(S.ultimaSync? fmtFecha(S.ultimaSync)+" "+new Date(S.ultimaSync).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}) : "nunca")+'</td></tr>' +
+    '<tr><td>Cambios pendientes</td><td style="text-align:left">'+S.cola.length+'</td></tr>' +
+    '</tbody></table>' +
+    '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">' +
+    '<button class="btn btn-soft" data-action="sincronizar">'+icon("refresh")+' Sincronizar ahora</button>' +
+    '<button class="btn" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar de la nube</button></div>' +
+    '<div class="hint" style="margin-top:10px">La sincronización es <b>automática</b>: cada cambio que hagas (importar, crear, eliminar…) se envía a la nube sin pulsar nada. Si trabajas sin conexión, se encola y se envía al reconectar.</div></div>';
+  /* Configuración editable (admin) */
+  if(admin){
+    h += '<div class="card card-pad set-sec"><h3>'+icon("gear",17)+' Configuración de Firebase</h3>' +
+      '<div class="desc">Pega aquí otra configuración (firebaseConfig) si cambias de proyecto. Se guarda solo en este dispositivo.</div>' +
+      '<textarea class="inp" id="cfgArea" spellcheck="false">'+esc(JSON.stringify(cfg, null, 2))+'</textarea>' +
+      '<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">' +
+      '<button class="btn btn-primary btn-sm" data-action="guardarConfig">Guardar configuración</button>' +
+      '<button class="btn btn-sm" data-action="restaurarConfig">Restaurar la del centro</button></div></div>';
+    /* Reglas (admin) */
+    h += '<div class="card card-pad set-sec"><h3>'+icon("shield",17)+' Reglas de seguridad de la base de datos</h3>' +
+      '<div class="desc">Copia estas reglas en Firebase Console → Realtime Database → Reglas. Aíslan la app de otras, separan los datos por centro y curso, y aplican los perfiles: <b>usuario</b> = leer, <b>administrador</b> = leer y escribir.</div>' +
+      '<div class="hint">Deben estar publicadas junto con el acceso <b>Correo electrónico/contraseña</b> activado en Authentication → Sign-in method (Firebase lo exige aunque el acceso de los profesores sea con nombre de usuario: internamente se usa un identificador técnico).</div>' +
+      '<div class="rule-head"><b>Reglas recomendadas (usuarios y roles)</b><button class="btn btn-sm" data-action="copiarReglas" data-cual="auth">'+icon("copy",14)+' Copiar</button></div>' +
+      '<pre class="rules">'+esc(REGLAS_RECOMENDADAS)+'</pre></div>';
+  }
+  /* PWA */
+  var instalada = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+  h += '<div class="card card-pad set-sec"><h3>'+icon("install",17)+' Instalar como aplicación (PWA)</h3>' +
+    '<div class="desc">Instálala en el escritorio, tablet o móvil para usarla a pantalla completa y sin conexión.</div>' +
+    (instalada? '<div class="hint">La aplicación ya está instalada y ejecutándose como app.</div>'
+     : ios? '<div class="hint warn">En iPhone/iPad: pulsa <b>Compartir</b> en Safari y elige <b>«Añadir a pantalla de inicio»</b>.</div>'
+     : '<div style="display:flex; gap:8px; flex-wrap:wrap"><button class="btn btn-primary" data-action="instalar" '+(puedeInstalar()?"":"disabled")+'>'+icon("install")+' Instalar ahora</button></div>' +
+       (puedeInstalar()? "" : '<div class="hint" style="margin-top:8px">Si el botón está deshabilitado, usa el menú del navegador → «Instalar app» o «Añadir a pantalla de inicio».</div>')) +
+    '</div>';
+  /* Copias de seguridad */
+  h += '<div class="card card-pad set-sec"><h3>'+icon("download",17)+' Copia de seguridad</h3>' +
+    '<div class="desc">Exporta los grupos guardados en este dispositivo a un archivo JSON (o restáuralos en otro equipo' + (admin?"":", como administrador") + ').</div>' +
+    '<div style="display:flex; gap:8px; flex-wrap:wrap">' +
+    '<button class="btn" data-action="exportBackup">'+icon("download")+' Exportar JSON</button>' +
+    (admin? '<button class="btn" data-action="importBackupClick">'+icon("upload")+' Importar JSON</button>' : "") +
+    (admin? '<button class="btn btn-danger" data-action="borrarLocal">'+icon("trash")+' Borrar datos locales</button>' : "") +
+    '</div></div>';
+  /* Acerca de */
+  h += '<div class="card card-pad set-sec"><h3>'+icon("info",17)+' Acerca de</h3>' +
+    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.1 (acceso por usuario y contraseña) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
+  return h;
+}
+
+/* Mapa de vistas → funciones de renderizado */
+var RENDER = {
+  inicio: renderInicio,
+  resumen: renderResumen,
+  competencias: renderCompetencias,
+  alumno: renderAlumno,
+  stats: renderStats,
+  admin: renderAdmin,
+  ajustes: renderAjustes
+};
+
+/* =====================================================================
+   actions.js · Acciones de interfaz, formularios de acceso (usuario y
+   contraseña, sin correo), importación de XML con auto-sync, y gestión
+   de usuarios/cursos (administradores)
+   ===================================================================== */
+
+
+/* ============ ACCESO ============ */
+var loginModo = "entrar";
+function setLoginModo(m){
+  loginModo = m;
+  $all("#loginTabs .ltab").forEach(function(b){ b.classList.toggle("active", b.dataset.lmod===m); });
+  var fEntrar = $("#formLogin"), fPrimero = $("#formPrimero");
+  if(fEntrar) fEntrar.style.display = (m==="entrar") ? "" : "none";
+  if(fPrimero) fPrimero.style.display = (m==="primero") ? "" : "none";
+  var pieEntrar = $("#pieEntrar"), piePrimero = $("#piePrimero");
+  if(pieEntrar) pieEntrar.style.display = (m==="entrar") ? "" : "none";
+  if(piePrimero) piePrimero.style.display = (m==="primero") ? "" : "none";
+  $("#loginError").hidden = true;
+}
+function enviarLogin(e){
+  e.preventDefault();
+  var usuario = normalizarUsuario($("#loginUsuario").value);
+  var pass = $("#loginPass").value;
+  var btn = $("#loginBtn");
+  if(!usuario || !pass){ return; }
+  if(!usuarioValido(usuario)){
+    var el0 = $("#loginError");
+    el0.textContent = "El usuario debe tener 3-20 caracteres (letras, números, punto, guion o guion bajo), sin espacios ni acentos.";
+    el0.hidden = false;
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Entrando…";
+  authEntrar(usuario, pass)
+   .then(function(){ return flujoPostLogin(); })
+   .catch(function(err){
+     var el = $("#loginError");
+     el.textContent = (err && err.message) || String(err);
+     el.hidden = false;
+     btn.disabled = false;
+     btn.textContent = "Entrar";
+   });
+}
+/* Primer acceso: crea la PRIMERA cuenta, que queda como administradora */
+function enviarPrimerAcceso(e){
+  e.preventDefault();
+  var nombre = ($("#primerNombre").value||"").trim();
+  var usuario = normalizarUsuario($("#primerUsuario").value);
+  var pass = $("#primerPass").value;
+  var err = $("#loginError");
+  var btn = $("#primerBtn");
+  function fallo(msg){ err.textContent = msg; err.hidden = false; btn.disabled = false; btn.textContent = "Crear cuenta de administrador/a"; }
+  btn.disabled = true;
+  btn.textContent = "Creando cuenta…";
+  err.hidden = true;
+  if(!nombre) return fallo("Escribe tu nombre y apellidos.");
+  if(!usuarioValido(usuario)) return fallo("El usuario debe tener 3-20 caracteres (letras, números, punto, guion o guion bajo), sin espacios ni acentos.");
+  if(pass.length<6) return fallo("La contraseña debe tener al menos 6 caracteres.");
+  authRegistrarse(usuario, pass).then(function(uid){
+    var perfil = {
+      usuario: usuario, nombre: nombre, role: "administrador",
+      password: pass, activo: true, creadoEn: new Date().toISOString()
+    };
+    return restPut(RUTA_USERS + "/" + uid, perfil).then(function(){
+      Auth.perfil = perfil; Auth.persistir();
+    });
+  }).then(function(){
+    return flujoPostLogin();
+  }).catch(function(e2){
+    authSalir();
+    var msg = (e2 && e2.message) || String(e2);
+    if(msg.indexOf("ya está en uso")>=0)
+      msg = "Ese nombre de usuario ya está registrado. Si ya existe la cuenta del centro, entra con la pestaña «Entrar».";
+    else if(msg.indexOf("Permission denied")>=0 || msg.indexOf("permission")>=0)
+      msg = "Ya existen usuarios registrados: solo el PRIMER acceso puede crear la cuenta de administrador/a. Pide a otro administrador que cree tu usuario desde «Administración → Usuarios».";
+    fallo(msg);
+  });
+}
+
+/* ============ ACCIONES ============ */
+var ACTIONS = {
+  ir: function(el){ ir(el.dataset.view); },
+  abrirNav: function(){ document.body.classList.add("nav-open"); },
+  cerrarNav: function(){ document.body.classList.remove("nav-open"); },
+  cerrarDlg: function(el, e){ if(e && e.target!==el) return; cerrarDlg(); },
+  confirmOk: function(){ var cb=_confirmCb; _confirmCb=null; cerrarDlg(); if(cb) cb(); },
+  alternarTema: function(){
+    var orden = ["auto","light","dark"];
+    var idx = orden.indexOf(S.theme);
+    S.theme = orden[(idx+1)%3];
+    guardarEstado(); renderActual();
+    toast("Tema: " + (S.theme==="auto"?"automático":S.theme==="dark"?"oscuro":"claro"));
+  },
+  instalar: function(){ instalarPWA(); },
+
+  /* --- Acceso --- */
+  cerrarSesion: function(){
+    authSalir();
+    mostrarLogin();
+    toast("Sesión cerrada");
+  },
+  copiarUid: function(){ copiarAlPortapapeles($("#pendUid").textContent); },
+  abrirCuenta: function(){
+    var p = Auth.perfil || {};
+    var admin = Auth.esAdmin();
+    var h = dlgHead(icon("user",20)+' Tu cuenta', 'Sesión iniciada en este dispositivo');
+    h += '<div class="dlg-body"><table class="stats-t"><tbody>' +
+      '<tr><td>Nombre</td><td style="text-align:left">'+esc(p.nombre||"—")+'</td></tr>' +
+      '<tr><td>Usuario</td><td style="text-align:left">@'+esc(p.usuario||"—")+'</td></tr>' +
+      '<tr><td>Perfil</td><td style="text-align:left"><span class="rolepill '+(admin?"admin":"usuario")+'">'+(admin?"administrador":"usuario")+'</span></td></tr>' +
+      '<tr><td>UID</td><td style="text-align:left; font-size:11px; word-break:break-all">'+esc(Auth.uid()||"—")+'</td></tr>' +
+      '</tbody></table></div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cambiarPassDlg">'+icon("key",14)+' Cambiar contraseña</button>' +
+      '<button class="btn btn-danger" data-action="cerrarSesion">'+icon("logout",14)+' Salir</button></div>';
+    openDialog(h);
+  },
+  cambiarPassDlg: function(){
+    var h = dlgHead(icon("key",20)+' Cambiar contraseña', 'Se aplicará a tu cuenta de acceso');
+    h += '<div class="dlg-body">' +
+      '<div class="field"><label>Nueva contraseña</label><input class="inp" id="passNueva" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></div>' +
+      '<div class="field"><label>Repite la contraseña</label><input class="inp" id="passNueva2" type="password"></div>' +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-primary" data-action="cambiarPass">Guardar</button></div>';
+    openDialog(h);
+  },
+  cambiarPass: function(){
+    var a = $("#passNueva").value, b = $("#passNueva2").value;
+    if(a.length<6){ toast("La contraseña debe tener al menos 6 caracteres","warn"); return; }
+    if(a!==b){ toast("Las contraseñas no coinciden","warn"); return; }
+    authCambiarContrasena(a).then(function(){
+      /* Mantener la copia del perfil al día para que el administrador pueda restablecerla */
+      var uid = Auth.uid();
+      if(uid) return restPut(RUTA_USERS + "/" + uid + "/password", a).catch(function(){
+        toast("Contraseña cambiada, pero el administrador no podrá restablecerla (no se pudo actualizar la copia)","warn");
+      });
+    }).then(function(){
+      cerrarDlg(); toast("Contraseña actualizada","ok");
+    }).catch(function(e){ toast((e && e.message) || "No se pudo cambiar la contraseña","err"); });
+  },
+
+  /* --- Grupos y datos --- */
+  importarClick: function(){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede importar datos","warn"); return; }
+    $("#fileXml").click();
+  },
+  abrirGrupo: function(el){
+    S.activeKey = el.dataset.key; S.alumnoIdx = 0; guardarEstado();
+    ir("resumen");
+  },
+  pedirEliminarGrupo: function(el){
+    if(!Auth.esAdmin()) return;
+    var key = el.dataset.key;
+    var ds = S.datasets[key]; if(!ds) return;
+    confirmar("¿Eliminar curso?",
+      "Se eliminará <b>"+esc(ds.meta.unidadNombre)+"</b> ("+esc(grupoTitulo(ds))+") de este dispositivo <b>y de la nube</b>. Los demás dispositivos lo perderán. Esta acción no se puede deshacer.",
+      "Eliminar", function(){
+        var centro = ds.meta.codigoCentro;
+        delete S.datasets[key];
+        S.cola = S.cola.filter(function(op){ return !(op.t==="save" && op.key===key); });
+        delete S.nubeGuardados[key];
+        if(S.activeKey===key) S.activeKey = null;
+        asegurarGrupoActivo(); guardarEstado();
+        nubeEliminar(centro, key).then(function(){
+          S.ultimaSync = new Date().toISOString(); guardarEstado(); refrescarEstadoNubeUI();
+          toast("Curso eliminado del dispositivo y de la nube","ok");
+        }).catch(function(e){
+          toast("Eliminado del dispositivo; no se pudo borrar en la nube: "+(e.message||e),"warn");
+        }).then(function(){ renderActual(); });
+      });
+  },
+  nuevoGrupoVacio: function(){
+    if(!Auth.esAdmin()) return;
+    var centro = (grupoActivo()||gruposLocales()[0]||{}).meta || null;
+    var h = dlgHead(icon("plus",20)+' Crear grupo vacío', 'Podrás importar después su XML o usarlo como contenedor');
+    h += '<div class="dlg-body">' +
+      '<div class="field"><label>Nombre del grupo</label><input class="inp" id="gvNombre" placeholder="p. ej. 2º B"></div>' +
+      '<div class="field"><label>Curso (etapa)</label><input class="inp" id="gvCurso" placeholder="p. ej. 2º ESO"></div>' +
+      (centro? '' : '<div class="hint warn">Todavía no se conoce el código del centro: se usará «SIN_CENTRO» hasta que importes un XML.</div>') +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-primary" data-action="crearGrupoVacio">Crear</button></div>';
+    openDialog(h);
+    setTimeout(function(){ var i=$("#gvNombre"); if(i) i.focus(); }, 50);
+  },
+  crearGrupoVacio: function(){
+    var nombre = sanitizarKey($("#gvNombre").value || "");
+    if(!nombre){ toast("Escribe un nombre para el grupo","warn"); return; }
+    var base = (grupoActivo()||gruposLocales()[0]||{}).meta || {};
+    var anno = String(new Date().getFullYear());
+    var meta = {
+      codigoCentro: base.codigoCentro || "SIN_CENTRO",
+      nombreCentro: base.nombreCentro || "",
+      localidad: base.localidad || "",
+      anno: anno, periodo: "1", convocatoria: "Manual", fecha: "",
+      cursoGeneral: sanitizarKey($("#gvCurso").value) || "Curso",
+      unidadId: "", unidadNombre: nombre,
+      fechaCarga: new Date().toISOString(), totalAlumnos: 0
+    };
+    var ds = { key: construirGrupoKey(meta), meta: meta, alumnos: [] };
+    importarDatasets([ds]);
+    cerrarDlg();
+    sincronizarCambios([ds.key]);
+    toast("Grupo "+nombre+" creado · sincronizando con la nube","ok");
+    S.view = "inicio"; renderActual();
+  },
+  descargarDeNube: function(){
+    if(!navigator.onLine){ toast("Sin conexión","warn"); return; }
+    toast("Descargando grupos desde la nube…");
+    nubeListarTodos().then(function(lista){
+      if(!lista.length){ toast("No hay grupos guardados en la nube todavía","warn"); return; }
+      lista.forEach(function(g){ if(g && g.key) S.nubeGuardados[g.key] = (g.meta && g.meta.fechaCarga) || new Date().toISOString(); });
+      importarDatasets(lista);
+      guardarEstado(); renderActual();
+      toast(lista.length+" grupo"+(lista.length>1?"s":"")+" descargado"+(lista.length>1?"s":"")+" de la nube","ok");
+    }).catch(function(e){ toast("Error al descargar: "+(e.message||e),"err"); });
+  },
+  abrirNube: function(){ dlgNube(); },
+  nubeRefrescar: function(){ refrescarNubeDlg(null); },
+  nubeCargar: function(el){
+    var key = el.dataset.key;
+    var centro = el.dataset.centro;
+    el.disabled = true;
+    nubeCargar(centro, key).then(function(g){
+      importarDatasets([g]);
+      S.nubeGuardados[g.key] = new Date().toISOString();
+      S.cola = S.cola.filter(function(op){ return !(op.t==="del" && op.key===g.key); });
+      S.activeKey = g.key; guardarEstado(); cerrarDlg(); ir("resumen");
+      toast(g.meta.unidadNombre+" cargado desde la nube","ok");
+    }).catch(function(e){ el.disabled=false; toast("Error al cargar: "+(e.message||e),"err"); });
+  },
+  nubeEliminar: function(el){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede eliminar de la nube","warn"); return; }
+    var key = el.dataset.key;
+    var centro = el.dataset.centro;
+    confirmar("¿Eliminar de la nube?","El grupo <b>"+esc(key)+"</b> se borrará de Firebase (los demás dispositivos lo perderán). Esta acción no se puede deshacer.","Eliminar",function(){
+      nubeEliminar(centro, key).then(function(){
+        delete S.nubeGuardados[key];
+        S.ultimaSync = new Date().toISOString();
+        guardarEstado(); refrescarNubeDlg(null); renderActual();
+        toast("Grupo eliminado de la nube","ok");
+      }).catch(function(e){ toast("Error al eliminar: "+(e.message||e),"err"); });
+    });
+  },
+  sincronizar: function(){
+    if(!Auth.esAdmin()){ toast("Tu perfil solo consulta; no hay cambios que enviar","warn"); return; }
+    sincronizar(false).then(function(ok){ if(ok && $("#nubeBody")) refrescarNubeDlg(null); });
+  },
+
+  /* --- Navegación y detalles --- */
+  abrirFicha: function(el){ S.alumnoIdx = parseInt(el.dataset.idx,10)||0; ir("alumno"); },
+  abrirFichaDlg: function(el){ cerrarDlg(); S.alumnoIdx = parseInt(el.dataset.idx,10)||0; ir("alumno"); },
+  prevAlumno: function(){ if(S.alumnoIdx>0){ S.alumnoIdx--; guardarEstado(); renderActual(); } },
+  nextAlumno: function(){ var ds=grupoActivo(); if(ds && S.alumnoIdx<ds.alumnos.length-1){ S.alumnoIdx++; guardarEstado(); renderActual(); } },
+  cellDetalle: function(el){ dlgCellDetalle(parseInt(el.dataset.idx,10), el.dataset.comp); },
+  descDetalle: function(el){ dlgDescDetalle(el.dataset.comp, parseInt(el.dataset.num,10)); },
+  copiarReglas: function(el){ copiarAlPortapapeles(REGLAS_RECOMENDADAS); },
+
+  /* --- Configuración --- */
+  guardarConfig: function(){
+    if(!Auth.esAdmin()) return;
+    try{
+      var cfg = JSON.parse($("#cfgArea").value);
+      if(!cfg.apiKey || !cfg.databaseURL) throw new Error("Faltan apiKey o databaseURL");
+      S.firebaseConfig = cfg; guardarEstado();
+      toast("Configuración guardada. Cierra sesión y vuelve a entrar para aplicarla.","ok");
+      renderActual();
+    }catch(e){ toast("JSON no válido: "+e.message,"err"); }
+  },
+  restaurarConfig: function(){
+    if(!Auth.esAdmin()) return;
+    S.firebaseConfig = null; guardarEstado();
+    toast("Configuración del centro restaurada","ok");
+    renderActual();
+  },
+
+  /* --- Administración de usuarios --- */
+  adminCrearUsuario: function(){
+    if(!Auth.esAdmin()) return;
+    var nombre = ($("#nuevoNombre").value||"").trim();
+    var usuario = normalizarUsuario($("#nuevoUsuario").value);
+    var pass = $("#nuevoPass").value||"";
+    var rol = $("#nuevoRol").value || "usuario";
+    if(!nombre){ toast("Escribe el nombre y apellidos del nuevo usuario","warn"); return; }
+    if(!usuarioValido(usuario)){ toast("Usuario no válido: 3-20 caracteres (letras, números, ., -, _), sin espacios ni acentos","warn"); return; }
+    if(pass.length<6){ toast("La contraseña inicial debe tener al menos 6 caracteres","warn"); return; }
+    var btns = $all("[data-action='adminCrearUsuario']");
+    btns.forEach(function(b){ b.disabled=true; });
+    adminCrearCuentaAuth(usuario, pass).then(function(res){
+      return adminGuardarPerfil(res.uid, usuario, nombre, rol, pass);
+    }).then(function(){
+      toast("Usuario @" + usuario + " creado como " + rol,"ok");
+      $("#nuevoNombre").value=""; $("#nuevoUsuario").value=""; $("#nuevoPass").value="";
+      cargarUsuariosAdmin();
+    }).catch(function(e){
+      toast((e && e.message) || String(e),"err");
+    }).then(function(){ btns.forEach(function(b){ b.disabled=false; }); });
+  },
+  adminResetPassDlg: function(el){
+    if(!Auth.esAdmin()) return;
+    var uid = el.dataset.uid, usuario = el.dataset.usuario;
+    var h = dlgHead(icon("key",20)+' Restablecer contraseña', 'Cuenta de @'+esc(usuario));
+    h += '<div class="dlg-body">' +
+      '<div class="hint" style="margin-bottom:12px">Escribe una contraseña nueva y comunícasela a la persona afectada (no se envía ningún correo).</div>' +
+      '<div class="field"><label>Contraseña nueva</label><input class="inp" id="resetNueva" type="text" minlength="6" placeholder="Mínimo 6 caracteres"></div>' +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-primary" data-action="adminResetPass" data-uid="'+esc(uid)+'">Restablecer</button></div>';
+    openDialog(h);
+    setTimeout(function(){ var i=$("#resetNueva"); if(i) i.focus(); }, 50);
+  },
+  adminResetPass: function(el){
+    if(!Auth.esAdmin()) return;
+    var uid = el.dataset.uid;
+    var nueva = $("#resetNueva").value||"";
+    if(nueva.length<6){ toast("La contraseña debe tener al menos 6 caracteres","warn"); return; }
+    el.disabled = true;
+    adminRestablecerPass(uid, nueva).then(function(){
+      cerrarDlg(); toast("Contraseña restablecida","ok");
+      cargarUsuariosAdmin();
+    }).catch(function(e){
+      el.disabled = false;
+      toast((e && e.message) || "No se pudo restablecer la contraseña","err");
+    });
+  },
+  adminToggleActivo: function(el){
+    if(!Auth.esAdmin()) return;
+    var uid = el.dataset.uid, usuario = el.dataset.usuario;
+    var activo = el.dataset.activo === "1";
+    if(uid === Auth.uid()) return;
+    var accion = activo ? "desactivar" : "reactivar";
+    confirmar("¿" + (activo?"Desactivar":"Reactivar") + " la cuenta?",
+      activo
+        ? "La persona con usuario <b>@"+esc(usuario)+"</b> no podrá entrar hasta que la reactives. Su perfil y sus datos se conservan."
+        : "La cuenta <b>@"+esc(usuario)+"</b> volverá a tener acceso a la aplicación.",
+      activo ? "Desactivar" : "Reactivar", function(){
+        restPut(RUTA_USERS + "/" + uid + "/activo", !activo).then(function(){
+          toast("Cuenta " + (activo?"desactivada":"reactivada"),"ok");
+          cargarUsuariosAdmin();
+        }).catch(function(e){ toast("No se pudo "+accion+": "+(e.message||e),"err"); });
+      });
+  },
+  adminEliminarPerfil: function(el){
+    if(!Auth.esAdmin()) return;
+    var uid = el.dataset.uid, usuario = el.dataset.usuario;
+    if(uid === Auth.uid()) return;
+    confirmar("¿Eliminar el perfil?",
+      "Se eliminará el perfil de <b>@"+esc(usuario)+"</b>: dejará de poder entrar en la aplicación. La cuenta de acceso seguirá existiendo en Firebase Authentication (puedes eliminarla en la consola, Authentication → Users).",
+      "Eliminar perfil", function(){
+        restDelete(RUTA_USERS + "/" + uid).then(function(){
+          toast("Perfil eliminado","ok");
+          cargarUsuariosAdmin();
+        }).catch(function(e){ toast("No se pudo eliminar: "+(e.message||e),"err"); });
+      });
+  },
+
+  /* --- Copias de seguridad --- */
+  exportBackup: function(){
+    var payload = {app:"perfil-competencial-lomloe", version:2, exportado:new Date().toISOString(), datasets: S.datasets};
+    descargar("perfil-competencial-copia-"+new Date().toISOString().slice(0,10)+".json", JSON.stringify(payload, null, 2), "application/json");
+    toast("Copia exportada","ok");
+  },
+  importBackupClick: function(){ $("#fileJson").click(); },
+  borrarLocal: function(){
+    if(!Auth.esAdmin()) return;
+    confirmar("¿Borrar todos los datos locales?","Se eliminarán de este dispositivo todos los grupos importados y su configuración. Los datos guardados en la nube NO se verán afectados.","Borrar todo",function(){
+      S.datasets={}; S.cola=[]; S.nubeGuardados={}; S.activeKey=null; S.alumnoIdx=0;
+      guardarEstado(); ir("inicio");
+      toast("Datos locales borrados");
+    });
+  }
+};
+ACTIONS.imprimirResumen = function(){ imprimir("resumen"); };
+ACTIONS.imprimirAlumno  = function(){ imprimir("alumno"); };
+ACTIONS.imprimirStats   = function(){ imprimir("stats"); };
+
+/* ============ DELEGACIÓN DE EVENTOS ============ */
+document.addEventListener("click", function(e){
+  var el = e.target.closest("[data-action]");
+  if(!el) return;
+  var fn = ACTIONS[el.dataset.action];
+  if(fn){ e.preventDefault(); fn(el, e); }
+});
+document.addEventListener("input", function(e){
+  var el = e.target.closest("[data-input]");
+  if(!el) return;
+  if(el.dataset.input==="filtro"){
+    S.filtroResumen = el.value;
+    var pos = el.selectionStart;
+    renderActual();
+    var inp = $("#filtroRes");
+    if(inp){ inp.focus(); inp.setSelectionRange(pos,pos); }
+  }
+});
+document.addEventListener("change", function(e){
+  var el = e.target;
+  if(el.dataset && el.dataset.input==="selAlumno"){
+    S.alumnoIdx = parseInt(el.value,10)||0; guardarEstado(); renderActual();
+  }
+  if(el.dataset && el.dataset.input==="rolUsuario"){
+    var uid = el.dataset.uid, rol = el.value;
+    el.value = "";
+    if(!rol || !uid) return;
+    if(uid === Auth.uid()){ toast("No puedes cambiar tu propio perfil desde aquí","warn"); return; }
+    adminCambiarRole(uid, rol).then(function(){
+      toast("Perfil actualizado a "+rol,"ok");
+      cargarUsuariosAdmin();
+    }).catch(function(err){ toast("No se pudo cambiar el perfil: "+(err.message||err),"err"); });
+  }
+  if(el.id==="fileXml" && el.files && el.files.length){ procesarArchivos(el.files); el.value=""; }
+  if(el.id==="fileJson" && el.files && el.files.length){ importarBackup(el.files[0]); el.value=""; }
+});
+/* Drag & drop en Inicio */
+document.addEventListener("dragover", function(e){
+  var dz = e.target.closest && e.target.closest(".dropzone");
+  if(dz){ e.preventDefault(); dz.classList.add("over"); }
+});
+document.addEventListener("dragleave", function(e){
+  var dz = e.target.closest && e.target.closest(".dropzone");
+  if(dz) dz.classList.remove("over");
+});
+document.addEventListener("drop", function(e){
+  var dz = e.target.closest && e.target.closest(".dropzone");
+  if(!dz) return;
+  e.preventDefault(); dz.classList.remove("over");
+  if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) procesarArchivos(e.dataTransfer.files);
+});
+/* Teclas: flechas en ficha, Escape cierra diálogo */
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape"){ cerrarDlg(); return; }
+  if(S.view==="alumno" && !$("#dlgRoot").firstChild){
+    if(e.key==="ArrowLeft") ACTIONS.prevAlumno();
+    if(e.key==="ArrowRight") ACTIONS.nextAlumno();
+  }
+});
+/* Formularios de acceso */
+document.addEventListener("submit", function(e){
+  if(e.target && e.target.id==="formLogin") enviarLogin(e);
+  if(e.target && e.target.id==="formPrimero") enviarPrimerAcceso(e);
+});
+/* Pestañas de la pantalla de acceso */
+document.addEventListener("click", function(e){
+  var t = e.target.closest(".ltab");
+  if(t) setLoginModo(t.dataset.lmod);
+});
+
+/* ============ IMPORTACIÓN DE XML (con auto-sync) ============ */
+function procesarArchivos(fileList){
+  if(!Auth.esAdmin()){ toast("Solo el administrador puede importar informes","warn"); return; }
+  var files = Array.prototype.slice.call(fileList);
+  toast("Analizando "+files.length+" archivo"+(files.length>1?"s":"")+"…");
+  Promise.all(files.map(function(f){
+    return leerArchivoXML(f).then(function(t){ return {nombre:f.name, datasets: parsearXML(t, f.name)}; });
+  })).then(function(resultados){
+    var mapa = {};
+    var errores = [];
+    resultados.forEach(function(r){
+      r.datasets.forEach(function(ds){ mapa[ds.key]=ds; });
+    });
+    resultados.forEach(function(r){ if(r.datasets.length===0) errores.push(r.nombre); });
+    var lista = Object.keys(mapa).map(function(k){ return mapa[k]; });
+    if(lista.length===0){
+      toast("No se pudieron leer los archivos","err");
+      return;
+    }
+    dlgConfirmarImportacion(lista);
+  }).catch(function(e){
+    openDialog(dlgHead('Archivo no válido') +
+      '<div class="dlg-body"><div class="hint warn">'+esc(e.message||e)+'</div>' +
+      '<p style="font-size:12.5px;color:var(--muted)">Asegúrate de exportar desde Séneca el informe de <b>Niveles competenciales (LOMLOE)</b> en formato XML.</p></div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cerrar</button></div>');
+  });
+}
+function dlgConfirmarImportacion(lista){
+  _impPendiente = lista;
+  var existentes = lista.filter(function(ds){ return !!S.datasets[ds.key]; });
+  var sub = lista.length + " grupo" + (lista.length>1?"s":"") + " detectado" + (lista.length>1?"s":"") + " en los archivos";
+  if(existentes.length) sub += " · " + existentes.length + " ya existe" + (existentes.length>1?"n":"") + " y se actualizará";
+  var h = dlgHead(icon("file",20)+" Confirmar importación", sub);
+  h += '<div class="dlg-body">';
+  lista.forEach(function(ds){
+    var st = estadisticasGrupo(ds.alumnos);
+    var yaExiste = !!S.datasets[ds.key];
+    h += '<label class="preview-group"><input type="checkbox" class="impChk" value="'+esc(ds.key)+'" checked>' +
+      '<div class="info"><b>'+esc(ds.meta.unidadNombre)+'</b>' +
+      '<span>'+esc(ds.meta.cursoGeneral)+' · '+esc(ds.meta.anno)+' · P'+esc(ds.meta.periodo)+(ds.meta.convocatoria?' · '+esc(ds.meta.convocatoria):"")+' · '+ds.alumnos.length+' alumnos · media '+fmtNum(st.mediaGlobal)+(yaExiste?' · <b style="color:var(--warn)">actualizará el existente</b>':"")+'</span></div></label>';
+  });
+  h += '<div class="hint" style="margin-top:12px">Los grupos se guardarán en este dispositivo y se <b>sincronizarán automáticamente</b> con la nube (Firebase). Si estás sin conexión, se enviarán al reconectar.</div></div>';
+  h += '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+    '<button class="btn btn-primary" data-action="confirmarImport">'+icon("check")+' Importar seleccionados</button></div>';
+  openDialog(h, true);
+}
+var _impPendiente = null;
+function confirmarImport(){
+  var checks = $all(".impChk").filter(function(c){ return c.checked; });
+  var keys = {};
+  checks.forEach(function(c){ keys[c.value]=true; });
+  var lista = (_impPendiente||[]).filter(function(ds){ return keys[ds.key]; });
+  if(lista.length===0){ toast("No has seleccionado ningún grupo","warn"); return; }
+  importarDatasets(lista);
+  cerrarDlg();
+  toast(lista.length+" grupo"+(lista.length>1?"s":"")+" importado"+(lista.length>1?"s":"")+" · "+lista[0].meta.nombreCentro, "ok");
+  S.view = "resumen"; renderActual();
+  /* Sincronización automática con la nube */
+  sincronizarCambios(lista.map(function(ds){ return ds.key; }));
+}
+ACTIONS.confirmarImport = confirmarImport;
+
+function importarBackup(file){
+  if(!Auth.esAdmin()){ toast("Solo el administrador puede restaurar copias","warn"); return; }
+  file.text().then(function(t){
+    var data = JSON.parse(t);
+    var dts = data.datasets || data;
+    var lista = Object.keys(dts).map(function(k){ return dts[k]; }).filter(function(d){ return d && d.meta && d.alumnos; });
+    if(lista.length===0) throw new Error("sin grupos válidos");
+    importarDatasets(lista);
+    renderActual();
+    sincronizarCambios(lista.map(function(d){ return d.key; }));
+    toast("Copia restaurada: "+lista.length+" grupo"+(lista.length>1?"s":"")+" · sincronizando","ok");
+  }).catch(function(e){ toast("Archivo de copia no válido: "+(e.message||e),"err"); });
+}
+
+/* ============ ROUTER ============ */
+window.addEventListener("hashchange", function(){
+  if(!Auth.sesion || !Auth.perfil) return;
+  var v = (location.hash||"").replace(/^#\/?/,"") || "inicio";
+  if(v!==S.view && RENDER[v]) ir(v);
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener && window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){
+  if(S.theme==="auto") aplicarTema();
+});
+
+/* =====================================================================
+   pwa.js · Gráfico radar (canvas), exportación PDF (impresión),
+   instalación PWA, Service Worker y arranque de la aplicación
+   ===================================================================== */
+
+
+/* ============ GRÁFICO RADAR (canvas, sin dependencias) ============ */
+function colorVar(nombre){
+  var v = getComputedStyle(document.documentElement).getPropertyValue(nombre);
+  return (v||"").trim() || "#64748b";
+}
+function dibujarRadar(canvas, valores, color){
+  if(!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.width, h = canvas.height;
+  canvas.style.width = w+"px"; canvas.style.height = h+"px";
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  var ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  var cx = w/2, cy = h/2, R = Math.min(w,h)/2 - 34;
+  var n = COMPETENCIAS.length;
+  var grid = colorVar("--border-2") || "#d4dde9";
+  var texto = colorVar("--muted") || "#5b6b82";
+  var ang = function(i){ return -Math.PI/2 + i*2*Math.PI/n; };
+  for(var anillo=1; anillo<=5; anillo++){
+    ctx.beginPath();
+    for(var i=0;i<n;i++){
+      var r = R*anillo/5;
+      var x = cx + r*Math.cos(ang(i)), y = cy + r*Math.sin(ang(i));
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = grid;
+    ctx.globalAlpha = anillo===5? 1 : .45;
+    ctx.lineWidth = anillo===5? 1.4 : 1;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  for(var i=0;i<n;i++){
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+R*Math.cos(ang(i)), cy+R*Math.sin(ang(i)));
+    ctx.strokeStyle = grid; ctx.globalAlpha=.45; ctx.lineWidth=1; ctx.stroke(); ctx.globalAlpha=1;
+  }
+  ctx.beginPath();
+  for(var i=0;i<n;i++){
+    var v = Math.max(0, Math.min(5, valores[i]==null?0:valores[i]));
+    var r = R*v/5;
+    var x = cx + r*Math.cos(ang(i)), y = cy + r*Math.sin(ang(i));
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color; ctx.globalAlpha = .22; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin="round"; ctx.stroke();
+  for(var i=0;i<n;i++){
+    var v = Math.max(0, Math.min(5, valores[i]==null?0:valores[i]));
+    var r = R*v/5;
+    var x = cx + r*Math.cos(ang(i)), y = cy + r*Math.sin(ang(i));
+    ctx.beginPath(); ctx.arc(x,y,3,0,2*Math.PI);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,3,0,2*Math.PI);
+    ctx.strokeStyle="#fff"; ctx.lineWidth=1.2; ctx.stroke();
+  }
+  ctx.font = "700 10.5px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for(var i=0;i<n;i++){
+    var x = cx + (R+17)*Math.cos(ang(i)), y = cy + (R+15)*Math.sin(ang(i));
+    ctx.fillStyle = COMPETENCIAS[i].color;
+    ctx.fillText(COMPETENCIAS[i].code, x, y);
+  }
+}
+function valoresGrupo(){
+  var ds = grupoActivo(); if(!ds) return [];
+  var st = estadisticasGrupo(ds.alumnos);
+  return COMPETENCIAS.map(function(c){ return st.medias[c.code]; });
+}
+function dibujarRadarGrupo(){ dibujarRadar($("#radarGrupo"), valoresGrupo(), colorVar("--primary")); }
+function dibujarRadarAlumno(){
+  var ds = grupoActivo(); if(!ds) return;
+  var a = ds.alumnos[S.alumnoIdx]; if(!a) return;
+  var pr = promediosAlumno(a);
+  dibujarRadar($("#radarAlumno"), COMPETENCIAS.map(function(c){ return pr[c.code].media; }), colorVar("--primary"));
+}
+
+/* ============ EXPORTACIÓN A PDF (diálogo de impresión del navegador) ============ */
+function pHead(titulo, ds, extra){
+  var m = ds.meta;
+  return '<div class="p-head"><div><h1>'+esc(titulo)+'</h1>' +
+    '<div style="font-size:11px;color:#475569">'+esc(m.nombreCentro)+' · '+esc(m.localidad||"")+'</div></div>' +
+    '<div class="p-meta">'+esc(grupoTitulo(ds))+'<br>'+esc(m.cursoGeneral)+' · '+ds.alumnos.length+' alumnos<br>Fecha del informe: '+esc(m.fecha||"—")+'<br>Emitido: '+new Date().toLocaleDateString("es-ES")+(extra?"<br>"+extra:"")+'</div></div>';
+}
+function pLegend(){
+  return '<div class="p-legend"><b>Niveles:</b>' + NIVELES_CUAL.map(function(n){
+    return '<span><span class="pill pl-'+n.code+'">'+n.code+'</span>'+n.nombre+'</span>';
+  }).join("") + '</div>';
+}
+function imprimir(tipo){
+  var ds = grupoActivo(); if(!ds){ toast("Selecciona primero un grupo","warn"); return; }
+  var area = $("#printArea");
+  var st = estadisticasGrupo(ds.alumnos);
+  var html = "";
+  if(tipo==="resumen"){
+    html += pHead("Perfil competencial del grupo", ds, "Media global: "+fmtNum(st.mediaGlobal)+" / 5");
+    html += '<table><thead><tr><th style="text-align:left">Alumno/a</th>' +
+      COMPETENCIAS.map(function(c){ return '<th>'+c.code+'</th>'; }).join("") + '<th>Media</th></tr></thead><tbody>';
+    ds.alumnos.forEach(function(a){
+      var pr = promediosAlumno(a);
+      var mg = mediaGlobalAlumno(a);
+      html += '<tr><td class="pname">'+esc(nombreAlumno(a))+'</td>' +
+        COMPETENCIAS.map(function(c){ var p=pr[c.code]; return '<td><span class="pill pl-'+p.code+'">'+p.code+'</span></td>'; }).join("") +
+        '<td><b>'+fmtNum(mg.media)+'</b> <span class="pill pl-'+mg.code+'">'+mg.code+'</span></td></tr>';
+    });
+    html += '</tbody><tfoot><tr><td class="pname">Media del grupo</td>' +
+      COMPETENCIAS.map(function(c){
+        var m = st.medias[c.code]; var nv = m==null? null : nivelPorEscala(m);
+        return '<td><b>'+fmtNum(m)+'</b>'+(nv?' <span class="pill pl-'+nv.code+'">'+nv.code+'</span>':"")+'</td>';
+      }).join("") + '<td><b>'+fmtNum(st.mediaGlobal)+'</b></td></tr></tfoot></table>';
+    html += pLegend();
+    html += '<div class="p-foot"><div class="sig">El/La tutor/a</div><div class="sig">Jefatura de estudios</div><div class="sig">Fecha</div></div>';
+  }else if(tipo==="alumno"){
+    var a = ds.alumnos[S.alumnoIdx]; if(!a){ toast("No hay alumno seleccionado","warn"); return; }
+    var pr = promediosAlumno(a);
+    var mg = mediaGlobalAlumno(a);
+    html += pHead("Informe competencial individual · "+nombreAlumno(a), ds, "Media global: "+fmtNum(mg.media)+" / 5 ("+mg.code+")");
+    html += '<div class="avoid-break"><canvas id="radarPrint" width="360" height="300"></canvas></div>';
+    html += '<table><thead><tr><th style="text-align:left">Competencia</th><th>Media /5</th><th>Nivel</th><th>Descriptores</th></tr></thead><tbody>';
+    COMPETENCIAS.forEach(function(c){
+      var p = pr[c.code];
+      var nums = descriptoresDeCompetencia(ds.alumnos, c.code);
+      var descs = nums.map(function(num){
+        var v = a.descriptores[c.code+num];
+        var n = v? NIVELES_MAP[v] : null;
+        return c.code+num+" "+(n? n.code : "—");
+      }).join(" · ");
+      html += '<tr><td style="text-align:left">'+esc(c.nombre)+'</td><td><b>'+fmtNum(p.media)+'</b></td>' +
+        '<td><span class="pill pl-'+p.code+'">'+p.code+'</span></td><td style="text-align:left; font-size:8.5px">'+esc(descs)+'</td></tr>';
+    });
+    html += '</tbody></table>' + pLegend();
+    html += '<div class="p-foot"><div class="sig">El/La tutor/a</div><div class="sig">Familia</div><div class="sig">Fecha</div></div>';
+  }else if(tipo==="stats"){
+    html += pHead("Estadísticas del grupo", ds, "Media global: "+fmtNum(st.mediaGlobal)+" / 5");
+    html += '<div class="p-kpis">' +
+      '<div class="p-kpi"><b>'+st.totalAlumnos+'</b>Alumnos</div>' +
+      '<div class="p-kpi"><b>'+fmtNum(st.mediaGlobal)+'</b>Media global /5</div>' +
+      '<div class="p-kpi"><b>'+(st.competenciaMasAlta||"—")+'</b>Más fuerte</div>' +
+      '<div class="p-kpi"><b>'+(st.competenciaMasBaja||"—")+'</b>A reforzar</div></div>';
+    html += '<h2>Resumen por competencia</h2>';
+    html += '<table><thead><tr><th style="text-align:left">Competencia</th><th>Media /5</th><th>Nivel</th><th>% NT o SB</th><th>IN</th><th>SU</th><th>BI</th><th>NT</th><th>SB</th></tr></thead><tbody>';
+    COMPETENCIAS.forEach(function(c){
+      var m = st.medias[c.code]; var nv = m==null? null : nivelPorEscala(m);
+      var d = st.distribucion[c.code];
+      html += '<tr><td style="text-align:left">'+esc(c.nombre)+'</td><td><b>'+fmtNum(m)+'</b></td>' +
+        '<td>'+(nv?'<span class="pill pl-'+nv.code+'">'+nv.code+'</span>':"—")+'</td>' +
+        '<td>'+(st.porcentajeAltos[c.code]==null?"—":Math.round(st.porcentajeAltos[c.code])+"%")+'</td>' +
+        NIVELES_CUAL.map(function(n){ return '<td>'+d[n.code]+'</td>'; }).join("") + '</tr>';
+    });
+    html += '</tbody></table>' + pLegend();
+    html += '<div class="p-foot"><div class="sig">El/La tutor/a</div><div class="sig">Jefatura de estudios</div><div class="sig">Fecha</div></div>';
+  }
+  area.innerHTML = html;
+  if(tipo==="alumno"){
+    var cv = document.getElementById("radarPrint");
+    if(cv){
+      var pr2 = promediosAlumno(ds.alumnos[S.alumnoIdx]);
+      var prev = document.createElement("div"); prev.style.cssText="position:fixed;left:-9999px;top:0;width:360px;height:300px";
+      var tmp = document.createElement("canvas"); tmp.width=360; tmp.height=300;
+      prev.appendChild(tmp); document.body.appendChild(prev);
+      dibujarRadar(tmp, COMPETENCIAS.map(function(c){ return pr2[c.code].media; }), "#1e40af");
+      cv.getContext("2d").drawImage(tmp,0,0);
+      prev.remove();
+    }
+  }
+  var limpiar = function(){ area.innerHTML=""; window.removeEventListener("afterprint", limpiar); };
+  window.addEventListener("afterprint", limpiar);
+  setTimeout(function(){ window.print(); }, 60);
+}
+
+/* ============ PWA: INSTALACIÓN Y SERVICE WORKER ============ */
+var _deferredPrompt = null;
+function puedeInstalar(){ return !!_deferredPrompt; }
+function refrescarInstallBtn(){
+  var b = $("#installBtn");
+  if(!b) return;
+  var instalada = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  b.style.display = (!instalada && (_deferredPrompt || /iphone|ipad|ipod/i.test(navigator.userAgent))) ? "" : "none";
+  b.innerHTML = icon("install");
+}
+window.addEventListener("beforeinstallprompt", function(e){
+  e.preventDefault();
+  _deferredPrompt = e;
+  refrescarInstallBtn();
+});
+window.addEventListener("appinstalled", function(){
+  _deferredPrompt = null;
+  refrescarInstallBtn();
+  toast("Aplicación instalada","ok");
+});
+function instalarPWA(){
+  var instalada = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  if(instalada){ toast("Ya estás usando la aplicación instalada"); return; }
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent)){
+    toast("En iPhone/iPad: Compartir → «Añadir a pantalla de inicio»","warn");
+    return;
+  }
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; refrescarInstallBtn(); });
+  }else{
+    toast("Usa el menú del navegador → «Instalar app» / «Añadir a pantalla de inicio»","warn");
+  }
+}
+function intentarRegistrarSW(){
+  if(!navigator.serviceWorker || !location.protocol.match(/^https?$/)) return;
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    reg.addEventListener("updatefound", function(){
+      var nw = reg.installing;
+      if(!nw) return;
+      nw.addEventListener("statechange", function(){
+        if(nw.state==="installed" && navigator.serviceWorker.controller){
+          toast("Hay una versión nueva; se aplicará al recargar","warn");
+        }
+      });
+    });
+  }).catch(function(err){ console.warn("SW no registrado:", err); });
+}
+
+/* ============ ARRANQUE ============ */
+function boot(){
+  cargarEstado();
+  aplicarTema();
+  refrescarInstallBtn();
+  Auth.cargar();
+  intentarRegistrarSW();
+  setInterval(refrescarEstadoNubeUI, 30000);
+  if(Auth.sesion){
+    flujoPostLogin().then(function(perfil){
+      if(perfil && perfil.role==="administrador" && S.view==="admin") cargarUsuariosAdmin();
+    });
+  }else{
+    mostrarLogin();
+  }
+}
+/* Enganche para pruebas / consola (no interfiere con la app) */
+window.__app = {
+  estado: function(){ return S; },
+  ir: ir,
+  auth: Auth,
+  importarTextoXML: function(texto, nombre){
+    var ds = parsearXML(texto, nombre||"prueba.xml");
+    importarDatasets(ds);
+    if(Auth.sesion && Auth.perfil) renderActual();
+    return ds;
+  },
+  importarBuffer: function(buffer){
+    var texto = new TextDecoder("utf-8", {fatal:false}).decode(buffer);
+    if(texto.indexOf("\uFFFD")>=0) texto = new TextDecoder("iso-8859-1").decode(buffer);
+    return this.importarTextoXML(texto, "buffer.xml");
+  },
+  version: "2.1"
+};
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+</script>
+</body>
+</html>
