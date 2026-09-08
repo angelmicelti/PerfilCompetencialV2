@@ -161,6 +161,13 @@ button.groupchip:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--primary) 22%
 .opt-curso b{font-size:14px}
 .opt-curso span{font-size:12px; color:var(--muted)}
 .opt-curso .act-flag{font-size:10px; font-weight:700; letter-spacing:.5px; color:var(--primary-strong)}
+/* Cursos sucesivos: lista de cursos a duplicar para el año siguiente */
+.gs-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--card-2); cursor:pointer; margin-bottom:6px; transition:border-color .15s}
+.gs-row:hover{border-color:var(--primary)}
+.gs-row input[type=checkbox]{width:16px; height:16px; accent-color:var(--primary); flex:none; margin:0}
+.gs-main{display:flex; flex-direction:column; gap:1px; min-width:0; flex:1; text-align:left}
+.gs-main span{font-size:11.5px; color:var(--muted)}
+.gs-row .pill{flex:none}
 .top-actions{margin-left:auto; display:flex; align-items:center; gap:6px}
 #syncChip{
   display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
@@ -617,7 +624,7 @@ pre.rules{
     <p class="login-sub">Conectando con Firebase</p>
   </div>
 
-  <p class="login-copy">v2.2 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
+  <p class="login-copy">v2.3 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
 </div>
 
 <!-- ============ APLICACIÓN ============ -->
@@ -632,7 +639,7 @@ pre.rules{
       <button class="cloudpill" id="cloudPill" data-action="abrirNube" title="Estado de la nube">
         <span class="dot"></span><span id="cloudPillTxt">Comprobando nube…</span>
       </button>
-      <div class="ver">v2.2 · PWA · GitHub Pages</div>
+      <div class="ver">v2.3 · PWA · GitHub Pages</div>
     </div>
   </aside>
   <div id="scrim" data-action="cerrarNav"></div>
@@ -875,6 +882,50 @@ function claveLibre(base, ocupadas){
   var k = base, i = 2;
   while(S.datasets[k] || (ocupadas && ocupadas[k])){ k = base + "-" + i; i++; }
   return k;
+}
+
+/* ===== CURSOS SUCESIVOS: generación del año escolar siguiente ===== */
+/** Años escolares presentes en los cursos locales, ordenados (p. ej. "2025/2026") */
+function anosEscolaresLocales(){
+  var anos = {};
+  gruposLocales().forEach(function(ds){
+    var ae = annoEscolarDe(ds.meta);
+    if(ae && /^\d{4}\/\d{4}$/.test(ae)) anos[ae] = true;
+  });
+  return Object.keys(anos).sort(function(a,b){ return a.localeCompare(b, "es"); });
+}
+/** Año escolar siguiente: "2025/2026" → "2026/2027" */
+function siguienteAnoEscolar(ae){
+  var a = parseInt(String(ae||"").split("/")[0], 10);
+  return isNaN(a) ? "" : (a+1)+"/"+(a+2);
+}
+/**
+ * Plantilla de curso para el año siguiente: copia la estructura del curso dado
+ * (grupo, enseñanza, evaluación y convocatoria) pero SIN alumnos ni notas.
+ * Se crea como compartimento aislado: su clave (con el nuevo año) no pisa los datos de ningún otro curso.
+ */
+function cursoDeSiguienteAno(ds, destino){
+  var m = ds.meta, anno = String(destino).split("/")[0];
+  return {
+    key: sanitizarKey(m.unidadNombre+"_"+anno+"_P"+m.periodo+"_"+(m.convocatoria||"Conv")),
+    meta: {
+      codigoCentro: m.codigoCentro || "SIN_CENTRO", nombreCentro: m.nombreCentro || "", localidad: m.localidad || "",
+      anno: anno, annoEscolar: destino, periodo: m.periodo, convocatoria: m.convocatoria, fecha: "",
+      cursoGeneral: m.cursoGeneral || "Curso", unidadId: "", unidadNombre: m.unidadNombre,
+      fechaCarga: new Date().toISOString(), totalAlumnos: 0, origen: "siguiente",
+      creadoPor: (Auth.perfil && (Auth.perfil.usuario || Auth.perfil.nombre)) || ""
+    },
+    alumnos: []
+  };
+}
+/** ¿Ya existe un curso con la misma estructura (grupo/enseñanza/evaluación/convocatoria) en el año dado? */
+function existeCursoEnAno(unidadNombre, cursoGeneral, periodo, convocatoria, destino){
+  return gruposLocales().some(function(ex){
+    return annoEscolarDe(ex.meta)===destino && String(ex.meta.unidadNombre)===String(unidadNombre)
+      && String(ex.meta.cursoGeneral||"")===String(cursoGeneral||"")
+      && String(ex.meta.periodo)===String(periodo)
+      && String(ex.meta.convocatoria||"")===String(convocatoria||"");
+  });
 }
 function grupoEtiqueta(ds){
   var m = ds.meta;
@@ -1695,6 +1746,7 @@ function renderInicio(){
        '<div class="head-actions">' +
        (admin? '<button class="btn btn-soft" data-action="abrirNube">'+icon("cloud")+' Nube Firebase</button>' +
                '<button class="btn btn-soft" data-action="importarClick">'+icon("upload")+' Importar XML</button>' +
+               '<button class="btn btn-soft" data-action="generarSiguientes" title="Crea de una vez los cursos del año siguiente, vacíos y aislados">'+icon("cal")+' Generar próximo año</button>' +
                '<button class="btn btn-primary" data-action="nuevoCurso">'+icon("plus")+' Nuevo curso escolar</button>'
              : '<button class="btn btn-primary" data-action="descargarDeNube">'+icon("cloudDown")+' Actualizar desde la nube</button>') +
        '</div></div>';
@@ -1716,7 +1768,8 @@ function renderInicio(){
         '</div>' +
         '<div class="actions">' +
           '<button class="btn btn-primary btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'">'+icon("grid",14)+' Abrir</button>' +
-          (admin? '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este curso">'+icon("download",15)+'</button>' +
+          (admin? '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo curso para el año siguiente (vacío y aislado)">'+icon("copy",15)+'</button>' +
+                  '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este curso">'+icon("download",15)+'</button>' +
                   '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="Eliminar curso (dispositivo y nube)">'+icon("trash",15)+'</button>' : "") +
         '</div></div>';
     }).join("") + '</div>';
@@ -2026,7 +2079,7 @@ function renderAdmin(){
 
   /* --- Cursos y grupos --- */
   h += '<div class="card card-pad adm-sec"><h3>'+icon("book",17)+' Cursos escolares</h3>' +
-    '<div class="desc">Cada curso escolar se crea como un <b>compartimento aislado</b>: tiene su propia lista de alumnos, sus descriptores y sus estadísticas, tanto en este dispositivo como en la nube (nodo separado por centro, año, evaluación y convocatoria). <b>Los datos de un curso nunca se mezclan con los de otro.</b> Puedes crear cursos vacíos, importar su XML de Séneca dentro del curso que elijas, descargar copias de seguridad por curso o eliminar cursos completos.</div>';
+    '<div class="desc">Cada curso escolar se crea como un <b>compartimento aislado</b>: tiene su propia lista de alumnos, sus descriptores y sus estadísticas, tanto en este dispositivo como en la nube (nodo separado por centro, año, evaluación y convocatoria). <b>Los datos de un curso nunca se mezclan con los de otro.</b> Puedes crear cursos vacíos uno a uno, <b>generar de golpe los cursos del año siguiente</b> (cursos sucesivos: se copia la estructura, nunca los datos), importar su XML de Séneca dentro del curso que elijas, descargar copias de seguridad por curso o eliminar cursos completos.</div>';
   if(gs.length===0){
     h += '<div class="sin-usuarios">No hay cursos en este dispositivo. Crea el primero o importa un XML de Séneca.</div>';
   }else{
@@ -2038,12 +2091,14 @@ function renderAdmin(){
           '<td>'+(enNube? '<span class="pill lvl-SB sm">SÍ</span>' : '<span class="pill lvl-NA sm">NO</span>')+'</td>' +
           '<td style="text-align:right; white-space:nowrap">' +
           '<button class="btn btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'" title="Abrir este curso">'+icon("grid",14)+'</button> ' +
+          '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo curso para el año siguiente (vacío y aislado)">'+icon("copy",15)+'</button> ' +
           '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este curso">'+icon("download",15)+'</button> ' +
           '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="Eliminar curso (dispositivo y nube)">'+icon("trash",15)+'</button></td></tr>';
       }).join("") + '</tbody></table>';
   }
-  h += '<div class="rule-head"><b>Crear e importar cursos</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
-    '<button class="btn btn-primary btn-sm" data-action="nuevoCurso">'+icon("plus",14)+' Nuevo curso escolar</button>' +
+  h += '<div class="rule-head"><b>Crear, generar e importar cursos</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
+    '<button class="btn btn-primary btn-sm" data-action="generarSiguientes" title="Crea de una vez los cursos del año siguiente, vacíos y aislados">'+icon("cal",14)+' Generar próximo año</button>' +
+    '<button class="btn btn-sm" data-action="nuevoCurso">'+icon("plus",14)+' Nuevo curso escolar</button>' +
     '<button class="btn btn-sm" data-action="importarClick">'+icon("upload",14)+' Importar XML</button></div></div></div>';
 
   /* --- Usuarios --- */
@@ -2178,7 +2233,7 @@ function renderAjustes(){
     '</div></div>';
   /* Acerca de */
   h += '<div class="card card-pad set-sec"><h3>'+icon("info",17)+' Acerca de</h3>' +
-    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.2 (acceso por usuario y contraseña) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
+    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.3 (acceso por usuario y contraseña, generación de cursos sucesivos) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
   return h;
 }
 
@@ -2370,9 +2425,13 @@ var ACTIONS = {
     var centro = (grupoActivo()||gruposLocales()[0]||{}).meta || null;
     var hoy = new Date();
     var ini = (hoy.getMonth() >= 8) ? hoy.getFullYear() : hoy.getFullYear() - 1; /* curso escolar sep–ago */
+    var anosPrevios = anosEscolaresLocales();
+    var base = anosPrevios.length ? anosPrevios[anosPrevios.length-1] : (ini+"/"+(ini+1)); /* último curso existente */
+    var ba = parseInt(String(base).split("/")[0], 10); if(isNaN(ba)) ba = ini;
     var opciones = [];
-    for(var i=-1; i<=2; i++) opciones.push((ini+i)+"/"+(ini+i+1));
-    var actual = ini+"/"+(ini+1);
+    for(var i=-1; i<=3; i++) opciones.push((ba+i)+"/"+(ba+i+1));
+    /* Por defecto se sugiere el AÑO SIGUIENTE al último curso que ya existe (flujo de cursos sucesivos) */
+    var actual = siguienteAnoEscolar(base) || (ini+"/"+(ini+1));
     var h = dlgHead(icon("book",20)+' Nuevo curso escolar',
       'Se creará como un compartimento aislado: sus datos no se mezclan con los de ningún otro curso');
     h += '<div class="dlg-body">' +
@@ -2380,9 +2439,8 @@ var ACTIONS = {
       '<div class="field"><label>Enseñanza / curso</label><input class="inp" id="ncEnsenanza" placeholder="p. ej. 2º ESO" maxlength="60" list="ncCursosLista"></div>' +
       '<datalist id="ncCursosLista"><option value="1º ESO"></option><option value="2º ESO"></option><option value="3º ESO"></option><option value="4º ESO"></option><option value="1º Bachillerato"></option><option value="2º Bachillerato"></option><option value="1º FP"></option><option value="2º FP"></option></datalist>' +
       '<div class="adm-form">' +
-      '<div class="field"><label>Año escolar</label><select class="inp" id="ncAnno">'+
-        opciones.map(function(o){ return '<option'+(o===actual?' selected':'')+'>'+o+'</option>'; }).join("") +
-      '</select></div>' +
+      '<div class="field"><label>Año escolar <span style="font-weight:400;color:var(--muted)">(sugerido: el siguiente a tu último curso)</span></label><input class="inp" id="ncAnno" value="'+esc(actual)+'" list="ncAnosLista" maxlength="9" placeholder="p. ej. 2026/2027">' +
+        '<datalist id="ncAnosLista">'+ opciones.map(function(o){ return '<option value="'+o+'"></option>'; }).join("") +'</datalist></div>' +
       '<div class="field"><label>Evaluación</label><select class="inp" id="ncPeriodo"><option value="1">1ª evaluación</option><option value="2">2ª evaluación</option><option value="3">3ª evaluación</option><option value="F">Final</option></select></div>' +
       '<div class="field"><label>Convocatoria</label><input class="inp" id="ncConv" value="Ordinaria" maxlength="30"></div>' +
       '</div>' +
@@ -2435,6 +2493,114 @@ var ACTIONS = {
       aplicar(null);
     }
   },
+  /* ===== CURSOS SUCESIVOS: generar los cursos del año siguiente (solo admin) ===== */
+  generarSiguientes: function(){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede generar cursos","warn"); return; }
+    var anos = anosEscolaresLocales();
+    var hoy = new Date();
+    var ini = (hoy.getMonth() >= 8) ? hoy.getFullYear() : hoy.getFullYear() - 1; /* curso escolar sep–ago */
+    var actual = ini+"/"+(ini+1);
+    if(!anos.length) anos = [actual];
+    var origen = anos[anos.length-1];
+    var destino = siguienteAnoEscolar(origen) || actual;
+    var sugerencias = [];
+    var ba = parseInt(String(destino).split("/")[0], 10); if(isNaN(ba)) ba = ini+1;
+    for(var i=-2; i<=3; i++) sugerencias.push((ba+i)+"/"+(ba+i+1));
+    var h = dlgHead(icon("cal",20)+' Generar el próximo año escolar',
+      'Crea de una vez, <b>vacíos y aislados</b>, los cursos del año siguiente');
+    h += '<div class="dlg-body">' +
+      '<div class="adm-form">' +
+      '<div class="field"><label>Año de origen</label><select class="inp" id="gsOrigen">' +
+        anos.map(function(o){ return '<option'+(o===origen?' selected':'')+'>'+o+'</option>'; }).join("") +
+      '</select></div>' +
+      '<div class="field"><label>Año escolar nuevo</label><input class="inp" id="gsDestino" value="'+esc(destino)+'" list="gsAnosLista" maxlength="9" placeholder="p. ej. 2026/2027">' +
+        '<datalist id="gsAnosLista">'+ sugerencias.map(function(o){ return '<option value="'+o+'"></option>'; }).join("") +'</datalist></div>' +
+      '</div>' +
+      '<div class="hint">'+icon("copy",14)+' De cada curso marcado se copia la <b>estructura</b> (grupo, enseñanza, evaluación y convocatoria), <b>sin alumnos ni notas</b>. Después importarás dentro de cada curso nuevo su XML de Séneca.</div>' +
+      '<div id="gsLista">' +
+        gruposLocales().map(function(ds){
+          var ae = annoEscolarDe(ds.meta);
+          var sig = siguienteAnoEscolar(ae);
+          var ya = sig && existeCursoEnAno(ds.meta.unidadNombre, ds.meta.cursoGeneral, ds.meta.periodo, ds.meta.convocatoria, sig);
+          return '<label class="gs-row" data-ano="'+esc(ae)+'" style="display:'+(ae===origen?'flex':'none')+'">' +
+            '<input type="checkbox" value="'+esc(ds.key)+'" checked>' +
+            '<span class="gs-main"><b>'+esc(ds.meta.unidadNombre)+'</b>' +
+            '<span>'+esc(ds.meta.cursoGeneral)+' · '+esc(ae)+' · P'+esc(ds.meta.periodo)+(ds.meta.convocatoria?' · '+esc(ds.meta.convocatoria):"")+'</span></span>' +
+            (ya? '<span class="pill lvl-NA sm">YA EXISTE</span>' : '<span class="pill lvl-SB sm">SE CREARÁ</span>') +
+          '</label>';
+        }).join("") +
+      '</div>' +
+      '<div class="hint">'+icon("info",14)+' Cada curso nuevo será un <b>compartimento aislado</b>: los datos de los años anteriores <b>quedan intactos</b> y nada se mezcla ni se sobrescribe.</div>' +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-primary" data-action="crearSiguientes">'+icon("check",15)+' Generar cursos</button></div>';
+    openDialog(h);
+  },
+  crearSiguientes: function(){
+    var origen = (($("#gsOrigen")||{}).value || "").trim();
+    var destino = (($("#gsDestino")||{}).value || "").trim();
+    if(!/^\d{4}\/\d{4}$/.test(destino)){ toast("Escribe el año nuevo con el formato 2026/2027","warn"); return; }
+    var marcados = Array.prototype.slice.call(document.querySelectorAll('#gsLista input[type="checkbox"]:checked'))
+      .map(function(ch){ return S.datasets[ch.value]; })
+      .filter(function(ds){ return ds && (!origen || annoEscolarDe(ds.meta)===origen); }); /* solo cursos del año de origen */
+    if(!marcados.length){ toast("Marca al menos un curso de la lista","warn"); return; }
+    var pendientes = [], omitidos = [];
+    marcados.forEach(function(ds){
+      if(existeCursoEnAno(ds.meta.unidadNombre, ds.meta.cursoGeneral, ds.meta.periodo, ds.meta.convocatoria, destino)) omitidos.push(ds.meta.unidadNombre);
+      else pendientes.push(cursoDeSiguienteAno(ds, destino));
+    });
+    if(!pendientes.length){ cerrarDlg(); toast("Los cursos de "+destino+" ya existían: no se ha creado ninguno","warn"); return; }
+    var aplicar = function(ocupadasNube){
+      var claves = [];
+      pendientes.forEach(function(nds){
+        nds.key = claveLibre(nds.key, ocupadasNube||null); /* AISLAMIENTO: nunca pisa claves locales ni de la nube */
+        importarDatasets([nds]); claves.push(nds.key);
+      });
+      cerrarDlg();
+      S.activeKey = claves[0]; guardarEstado();
+      sincronizarCambios(claves); /* auto-sync: los cursos nuevos suben a la nube solos */
+      var msg = claves.length+" curso"+(claves.length>1?"s":"")+" de "+destino+" creado"+(claves.length>1?"s":"")+" (vacíos y aislados)";
+      if(omitidos.length) msg += " · ya existían: "+omitidos.join(", ");
+      toast(msg,"ok");
+      S.view = "inicio"; renderActual();
+    };
+    if(navigator.onLine){
+      toast("Comprobando cursos ya existentes en la nube…");
+      nubeListarTodos().then(function(listaNube){
+        var oc = {}; (listaNube||[]).forEach(function(g){ if(g && g.key) oc[g.key] = g; });
+        aplicar(oc);
+      }).catch(function(){ aplicar(null); });
+    } else aplicar(null);
+  },
+  duplicarSiguiente: function(el){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede generar cursos","warn"); return; }
+    var ds = S.datasets[el.dataset.key]; if(!ds) return;
+    var destino = siguienteAnoEscolar(annoEscolarDe(ds.meta));
+    if(!destino){ toast("No se pudo deducir el año siguiente de este curso","warn"); return; }
+    if(existeCursoEnAno(ds.meta.unidadNombre, ds.meta.cursoGeneral, ds.meta.periodo, ds.meta.convocatoria, destino)){
+      toast("Ya existe «"+ds.meta.unidadNombre+"» en "+destino+": no se crea duplicado","warn"); return;
+    }
+    var nds = cursoDeSiguienteAno(ds, destino);
+    confirmar('Generar curso para '+destino,
+      'Se creará el curso <b>'+esc(nds.meta.unidadNombre)+'</b> · '+esc(destino)+' · P'+esc(nds.meta.periodo)+(nds.meta.convocatoria?' · '+esc(nds.meta.convocatoria):"")+
+      ' como un <b>compartimento nuevo y aislado</b>, vacío (sin alumnos ni notas). El curso '+esc(annoEscolarDe(ds.meta))+' no se toca.',
+      'Crear curso '+destino, function(){
+        var aplicar = function(ocupadasNube){
+          nds.key = claveLibre(nds.key, ocupadasNube||null);
+          importarDatasets([nds]);
+          S.activeKey = nds.key; guardarEstado();
+          sincronizarCambios([nds.key]);
+          toast("Curso «"+nds.meta.unidadNombre+"» ("+destino+") creado vacío y aislado","ok");
+          S.view = "inicio"; renderActual();
+        };
+        if(navigator.onLine){
+          nubeListarTodos().then(function(listaNube){
+            var oc = {}; (listaNube||[]).forEach(function(g){ if(g && g.key) oc[g.key] = g; });
+            aplicar(oc);
+          }).catch(function(){ aplicar(null); });
+        } else aplicar(null);
+      }, true);
+  },
   /* Copia de seguridad individual del curso (formato compatible con «Restaurar copia») */
   exportCurso: function(el){
     var ds = S.datasets[el.dataset.key]; if(!ds) return;
@@ -2455,7 +2621,9 @@ var ACTIONS = {
         '<b>'+esc(ds.meta.unidadNombre)+'</b>' +
         '<span>'+esc(ds.meta.cursoGeneral)+' · '+esc(annoEscolarDe(ds.meta))+' · P'+esc(ds.meta.periodo)+(ds.meta.convocatoria?' · '+esc(ds.meta.convocatoria):"")+' · '+ds.alumnos.length+' alumnos</span></button>';
     });
-    h += '</div></div><div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cerrar</button></div>';
+    h += '</div></div><div class="dlg-foot">' +
+      (Auth.esAdmin()? '<button class="btn btn-soft" data-action="generarSiguientes" style="margin-right:auto">'+icon("cal",14)+' Generar próximo año</button>' : '') +
+      '<button class="btn" data-action="cerrarDlg">Cerrar</button></div>';
     openDialog(h);
   },
   elegirCurso: function(el){
@@ -2669,6 +2837,16 @@ document.addEventListener("change", function(e){
   }
   if(el.id==="fileXml" && el.files && el.files.length){ procesarArchivos(el.files); el.value=""; }
   if(el.id==="fileJson" && el.files && el.files.length){ importarBackup(el.files[0]); el.value=""; }
+  /* Cursos sucesivos: al cambiar el año de origen, actualiza destino y la lista visible */
+  if(el.id==="gsOrigen"){
+    var gsd = siguienteAnoEscolar(el.value);
+    if($("#gsDestino") && gsd) $("#gsDestino").value = gsd;
+    Array.prototype.forEach.call(document.querySelectorAll("#gsLista .gs-row"), function(row){
+      var mostrar = (row.getAttribute("data-ano")===el.value);
+      row.style.display = mostrar ? "flex" : "none";
+      if(!mostrar){ var ch = row.querySelector('input[type="checkbox"]'); if(ch) ch.checked = false; }
+    });
+  }
 });
 /* Drag & drop en Inicio */
 document.addEventListener("dragover", function(e){
@@ -3066,7 +3244,7 @@ window.__app = {
     if(texto.indexOf("\uFFFD")>=0) texto = new TextDecoder("iso-8859-1").decode(buffer);
     return this.importarTextoXML(texto, "buffer.xml");
   },
-  version: "2.2"
+  version: "2.3"
 };
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();
