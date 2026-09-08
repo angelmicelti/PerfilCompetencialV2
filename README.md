@@ -1,9 +1,10 @@
-# Perfil Competencial LOMLOE · PWA (v2.2)
+# Perfil Competencial LOMLOE · PWA (v2.3)
 
 Aplicación web instalable (PWA) para evaluar y analizar el **perfil competencial del alumnado** a partir de los informes **NIVELES_COMPETENCIALES** exportados de **Séneca** (XML). Todo el diseño, la lógica y los estilos están incluidos **dentro de un único `index.html`** (el HTML contiene el CSS y el JavaScript).
 
 - 🔐 **Acceso con nombre de usuario y contraseña** — sin correo electrónico (dos perfiles: **usuario** y **administrador**)
 - 🏫 **Creación de cursos escolares** desde la propia app (nombre, enseñanza, año escolar, evaluación y convocatoria)
+- 🔁 **Cursos sucesivos: «Generar próximo año»** — con un clic se crean los cursos del año escolar siguiente (vacíos y aislados), copiando la estructura de los actuales; también se puede duplicar curso por curso
 - 🗂️ **Datos aislados por curso**: cada curso vive en su propio compartimento en el dispositivo y en la nube; los datos de un curso **nunca** se mezclan con los de otro
 - ☁️ **Sincronización automática** con Firebase Realtime Database tras cualquier cambio, con cola offline
 - 📊 Matriz clicable alumno × competencia, análisis por competencia, ficha individual con navegación, estadísticas y **exportación a PDF**
@@ -49,7 +50,7 @@ En [Firebase Console](https://console.firebase.google.com/) → proyecto `iesvdv
 1. Crea un repositorio en GitHub (por ejemplo `perfil-competencial`), puede ser público o privado.
 2. Sube **todo el contenido de esta carpeta** a la rama principal (`main`): `index.html`, `manifest.json`, `sw.js`, la carpeta `icons/`, `database.rules.json`, `.nojekyll` y este `README.md`.
    - Desde la web: *Add file → Upload files* (arrarra también la carpeta de iconos).
-   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.2" && git push`.
+   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.3" && git push`.
 3. En el repositorio: **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** → Branch: **main** / **/(root)** → *Save*.
 4. Espera 1-2 minutos. Tu aplicación estará en:
    `https://TUUSUARIO.github.io/NOMBRE-DEL-REPO/`
@@ -72,7 +73,7 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 
 ## 5. Uso diario
 
-### Creación de cursos escolares y aislamiento de datos (v2.2)
+### Creación de cursos escolares y aislamiento de datos
 
 El administrador puede crear cursos escolares directamente en la app, sin depender de un XML:
 
@@ -92,10 +93,24 @@ El administrador puede crear cursos escolares directamente en la app, sin depend
 | **Copia por curso** | Botón de descarga (JSON) en cada curso: una copia de seguridad individual, restaurable desde *Ajustes → Restaurar copia*. |
 | **Cambiador de curso** | El chip de la cabecera muestra siempre el curso activo y, al pulsarlo, permite cambiar de curso (cada uno con sus datos completamente separados). |
 
+### Generación de cursos sucesivos: «Generar próximo año» (v2.3)
+
+Para pasar de curso escolar no hace falta recrear nada a mano. El administrador dispone de tres atajos:
+
+1. **Generar el próximo año de golpe**: botón **Inicio → Generar próximo año** (también en *Administración → Cursos escolares* y dentro del cambiador de curso).
+   - Se elige el **año de origen** (p. ej. `2025/2026`) y el **año nuevo** (sugerido automáticamente: `2026/2027`; también se puede escribir cualquier otro).
+   - Aparece la lista de cursos de ese año con una casilla por curso y el aviso **SE CREARÁ** o **YA EXISTE** en el año destino.
+   - Al pulsar **Generar cursos** se crean de una vez, **vacíos** (sin alumnos ni notas), con la misma estructura: grupo, enseñanza, evaluación y convocatoria.
+2. **Duplicar un solo curso para el año siguiente**: botón 📄 (dos hojas) en la tarjeta de cada curso en *Inicio* y en la tabla de *Administración*. Pregunta confirmación y crea ese curso concreto para el año siguiente.
+3. **Nuevo curso escolar** (uno a uno): el campo **año escolar** ahora es libre con sugerencias, y **por defecto propone el año siguiente** al último curso que ya tienes.
+
+**Qué se copia y qué no:** la estructura (grupo, enseñanza, evaluación y convocatoria) sí; **los alumnos y sus resultados NO** — entran después importando el XML de Séneca del nuevo año **dentro de cada curso nuevo**. Los cursos de años anteriores quedan **intactos** como historial consultable, y cada curso nuevo se registra en su propio nodo de la nube (con su año en la clave), de modo que los datos de un año y de otro nunca se mezclan. Si en el año destino ya existiera un curso con la misma estructura, la app lo detecta, lo marca **YA EXISTE** y no crea duplicados.
+
 ### Administrador (quien instaló la app)
 - **Importar XML**: pestaña *Inicio → Importar XML* (o arrastrando el archivo). Cada unidad del XML se convierte en un curso. Todo se sube solo a la nube.
 - **Crear cursos escolares**: *Inicio → Nuevo curso escolar* (vacío, con año escolar y evaluación a elegir).
-- **Añadir/eliminar cursos**: *Administración → Cursos escolares* (crear, importar, abrir, copia JSON, eliminar en dispositivo y nube).
+- **Generar los cursos del año siguiente**: *Inicio → Generar próximo año* (crea de golpe, vacíos y aislados, los cursos sucesivos del nuevo año escolar).
+- **Añadir/eliminar cursos**: *Administración → Cursos escolares* (crear, generar próximo año, importar, abrir, duplicar para el año siguiente, copia JSON, eliminar en dispositivo y nube).
 - **Crear usuarios**: *Administración → Usuarios → Añadir usuario nuevo*: nombre, **nombre de usuario**, contraseña inicial y perfil (`usuario` o `administrador`). Comunica a cada persona su usuario y contraseña.
 - **Restablecer una contraseña** 🔑: botón de la llave en la fila del usuario (no se envía ningún correo).
 - **Desactivar / reactivar el acceso**: botón ✕ / ✓ (el perfil y sus datos se conservan).
