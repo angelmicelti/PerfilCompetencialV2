@@ -1,9 +1,10 @@
-# Perfil Competencial LOMLOE · PWA (v2.5)
+# Perfil Competencial LOMLOE · PWA (v2.6)
 
 Aplicación web instalable (PWA) para evaluar y analizar el **perfil competencial del alumnado** a partir de los informes **NIVELES_COMPETENCIALES** exportados de **Séneca** (XML). Todo el diseño, la lógica y los estilos están incluidos **dentro de un único `index.html`** (el HTML contiene el CSS y el JavaScript).
 
 - 🔐 **Acceso con nombre de usuario y contraseña** — sin correo electrónico (dos perfiles: **usuario** y **administrador**)
-- 🏫 **Creación de cursos escolares** desde la propia app (nombre, enseñanza, año escolar, evaluación y convocatoria)
+- 🗂️ **Aislamiento por curso en pantalla (v2.6)** — la app trabaja siempre **dentro de un solo curso escolar**: Inicio muestra únicamente SUS grupos, y el chip de la cabecera (curso · grupo) abre un cambiador en dos pasos (curso → grupo)
+- 🏫 **Creación de cursos escolares sencilla (v2.6)** — «Nuevo curso escolar» pide **solo el año escolar**; el curso nace vacío y aislado y sus **grupos se crean solos al importar el XML** de Séneca o al transferir datos de un curso adyacente (ya no se pide ningún dato de grupo al crear el curso)
 - 🔁 **Cursos sucesivos: «Generar próximo año»** — con un clic se crean los cursos del año escolar siguiente (vacíos y aislados), copiando la estructura de los actuales; también se puede duplicar curso por curso
 - ⏪ **Cursos anteriores al presente** — el **año escolar** es un selector nativo con cualquier curso (p. ej. `2025/2026 — anterior`), con vista previa del estado (ANTERIOR / VIGENTE / FUTURO) y atajos «Curso anterior»
 - 📥 **¿Tienes datos de un curso anterior (p. ej. 2025/2026)?** — importa el XML directamente: el curso se crea solo con el año que trae el informe, aunque ya haya pasado (v2.5)
@@ -55,7 +56,7 @@ En [Firebase Console](https://console.firebase.google.com/) → proyecto `iesvdv
 1. Crea un repositorio en GitHub (por ejemplo `perfil-competencial`), puede ser público o privado.
 2. Sube **todo el contenido de esta carpeta** a la rama principal (`main`): `index.html`, `manifest.json`, `sw.js`, la carpeta `icons/`, `database.rules.json`, `.nojekyll` y este `README.md`.
    - Desde la web: *Add file → Upload files* (arrarra también la carpeta de iconos).
-   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.5" && git push`.
+   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.6" && git push`.
 3. En el repositorio: **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** → Branch: **main** / **/(root)** → *Save*.
 4. Espera 1-2 minutos. Tu aplicación estará en:
    `https://TUUSUARIO.github.io/NOMBRE-DEL-REPO/`
@@ -78,43 +79,52 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 
 ## 5. Uso diario
 
-### Creación de cursos escolares y aislamiento de datos
+### Aislamiento por curso en pantalla y creación de cursos (v2.6)
 
-El administrador puede crear cursos escolares directamente en la app, sin depender de un XML:
+**Un solo curso en pantalla.** La app ya no muestra todos los cursos a la vez. Ahora trabaja siempre dentro de un **curso escolar activo**:
 
-1. **Inicio → Nuevo curso escolar** (también en *Administración → Cursos escolares*).
-2. Rellena: **nombre del grupo o unidad** (p. ej. `2º ESO B`), **enseñanza** (p. ej. `2º ESO`), **año escolar**, **evaluación** (1ª, 2ª, 3ª o Final) y **convocatoria**.
-3. El curso se crea **vacío** y se sincroniza con la nube al instante. Después puedes **importar su XML de Séneca dentro de él** (se actualizará sin tocar otros cursos) o dejarlo como registro manual.
+- **Inicio** muestra la cabecera «Curso {año}» con su etiqueta de estado (ANTERIOR / VIGENTE / FUTURO / ARCHIVADO) y **únicamente los grupos de ese curso**.
+- El **selector de curso** (desplegable junto a los botones de Inicio) cambia de un curso a otro al instante; el chip de la cabecera indica en todo momento «Curso {año} · Grupo».
+- Al pulsar el chip se abre el **cambiador en dos pasos**: primero eliges el **curso escolar** (con el número de grupos y alumnos de cada uno) y después un **grupo** concreto; también puedes entrar en un curso vacío con «Ir a este curso».
+- Las vistas (Resumen, Por competencia, Alumno, Estadísticas) siempre usan un grupo **del curso activo**: si el curso no tiene grupos todavía, se muestra una pantalla que lo explica en lugar de datos de otro curso.
+- Al **importar un XML**, la app salta automáticamente al curso del informe importado.
+
+**Crear un curso escolar es ahora un paso.** *Inicio → Nuevo curso escolar* pide **solo el año escolar** (selector con anteriores, vigente y futuros, más «Otro año…» y los atajos «Curso anterior» / «Vigente»):
+
+1. Elige el año y pulsa **Crear curso**: nace un curso **vacío y aislado**, sincronizado con la nube.
+2. Sus **grupos no se crean a mano**: aparecen al **importar su XML de Séneca** (cada unidad del informe) o al **transferir datos desde un curso adyacente**.
+3. Mientras el curso está vacío, Inicio muestra una pantalla que lo indica con el botón de importación. En *Administración* los cursos vacíos se ven en su fila de año con botón **Eliminar** (nunca el vigente).
 
 **Cómo se garantiza el aislamiento entre cursos:**
 
 | Medida | Qué implica |
 |---|---|
-| **Nodo propio por curso** | Cada curso se guarda en `nivelesCompetencialesIESvdv/{centro}/grupos/{curso}`: lista de alumnos, descriptores y estadísticas viven solo dentro de su nodo. |
+| **Curso activo en pantalla** | Inicio, las vistas y las estadísticas solo muestran datos del curso escolar activo; el resto de cursos quedan fuera de la pantalla hasta que los selecciones. |
+| **Nodo propio por curso** | Cada curso se guarda en `nivelesCompetencialesIESvdv/{centro}/grupos/{curso}`, y el registro de cursos creados vacíos en `…/{centro}/cursos/{año}`: los datos viven solo dentro de su nodo. |
 | **Claves únicas con sufijo** | Si dos cursos pudieran generar la misma clave (mismo nombre, año y evaluación), la app aísla el nuevo con sufijo `-2`, `-3`… comprobando también las claves ya ocupadas **en la nube**. Nunca se fusionan ni se pisan datos. |
 | **Reimportación segura** | Al importar un XML, si el curso ya existe (misma unidad, año y evaluación) se **actualiza**; si la referencia coincide con **otro** curso distinto, se crea como curso nuevo aislado y la app lo avisa antes de importar. |
-| **Operaciones acotadas** | Abrir, editar, exportar o eliminar solo afectan al curso activo: eliminar un curso no toca los datos de los demás (lo indica también el diálogo de confirmación). |
-| **Reglas de Firebase** | Las reglas solo permiten leer/escribir dentro de `grupos/{curso}` con los perfiles correspondientes; es imposible escribir en un curso desde la ruta de otro. |
+| **Operaciones acotadas** | Abrir, exportar o eliminar solo afecta al curso activo: eliminar un curso no toca los datos de los demás (lo indica también el diálogo de confirmación). |
+| **Reglas de Firebase** | Las reglas solo permiten leer/escribir dentro de `grupos/{curso}` y `cursos/{año}` con los perfiles correspondientes; es imposible escribir en un curso desde la ruta de otro. |
 | **Copia por curso** | Botón de descarga (JSON) en cada curso: una copia de seguridad individual, restaurable desde *Ajustes → Restaurar copia*. |
-| **Cambiador de curso** | El chip de la cabecera muestra siempre el curso activo y, al pulsarlo, permite cambiar de curso (cada uno con sus datos completamente separados). |
+| **Administración por años** | La tabla de *Administración* agrupa los cursos por año escolar, con una fila por curso vacío. |
 
 ### Generación de cursos sucesivos: «Generar próximo año» (v2.3)
 
 Para pasar de curso escolar no hace falta recrear nada a mano. El administrador dispone de tres atajos:
 
-1. **Generar el próximo año de golpe**: botón **Inicio → Generar próximo año** (también en *Administración → Cursos escolares* y dentro del cambiador de curso).
+1. **Generar el próximo año de golpe**: botón **Administración → Cursos escolares → Generar próximo año**.
    - Se elige el **año de origen** (p. ej. `2025/2026`) y el **año nuevo** (sugerido automáticamente: `2026/2027`; también se puede escribir cualquier otro).
    - Aparece la lista de cursos de ese año con una casilla por curso y el aviso **SE CREARÁ** o **YA EXISTE** en el año destino.
-   - Al pulsar **Generar cursos** se crean de una vez, **vacíos** (sin alumnos ni notas), con la misma estructura: grupo, enseñanza, evaluación y convocatoria.
+   - Al pulsar **Generar cursos** se crean de una vez, **vacíos** (sin alumnos ni notas), con la misma estructura: grupo, enseñanza, evaluación y convocatoria. La app salta al curso nuevo creado.
 2. **Duplicar un solo curso para el año siguiente**: botón 📄 (dos hojas) en la tarjeta de cada curso en *Inicio* y en la tabla de *Administración*. Pregunta confirmación y crea ese curso concreto para el año siguiente.
-3. **Nuevo curso escolar** (uno a uno): el campo **año escolar** es un **selector nativo** (fiable en móvil) con cualquier año (también anteriores al presente, p. ej. `2023/2024`) más la opción **«Otro año…»**, y muestra en vivo si el año será ANTERIOR, VIGENTE o FUTURO. Por defecto propone el año siguiente al último curso que ya tienes.
+3. **Nuevo curso escolar** (uno a uno): pide **solo el año escolar** — selector nativo (fiable en móvil) con cualquier año (también anteriores al presente, p. ej. `2023/2024`) más la opción **«Otro año…»**, y muestra en vivo si el año será ANTERIOR, VIGENTE o FUTURO. Los grupos del curso nacen al importar su XML o transferir datos.
 
 ### ¿Tienes datos de un curso anterior? (p. ej. 2025/2026) — v2.5
 
 Sí puedes. Tres caminos, todos con aislamiento garantizado:
 
 1. **Importar el XML directamente (el más rápido).** Pulsa *Inicio → Importar XML* y carga el informe de Séneca del curso 2025/2026: la app lee el **año que trae el propio informe** (campo `C_ANNO`) y crea —o actualiza— ese curso automáticamente, aunque sea anterior al vigente. En el diálogo de confirmación verás la etiqueta **ANTERIOR** junto al curso que se va a crear.
-2. **Crear el curso a mano y luego importar dentro de él.** *Inicio → Nuevo curso escolar*: el **año escolar** es un **selector nativo** (funciona bien en móvil) con todos los cursos anteriores (p. ej. `2025/2026 — anterior`), el vigente, los futuros y la opción **«Otro año…»** para escribir cualquier año (1990–2100). Incluye los atajos **«Curso anterior (…)»** y **«Vigente (…)»** en el propio diálogo, y el botón **«Curso anterior…»** dentro del cambiador de curso (chip de la cabecera). Después importa su XML: si el grupo coincide (misma unidad, año y evaluación) se **actualiza** ese curso; si es otro grupo, se crea como curso nuevo aislado.
+2. **Crear el curso a mano y luego importar dentro de él.** *Inicio → Nuevo curso escolar*: pide **solo el año escolar**, con **selector nativo** (funciona bien en móvil) de todos los cursos anteriores (p. ej. `2025/2026 — anterior`), el vigente, los futuros y la opción **«Otro año…»** para escribir cualquier año (1990–2100). Incluye los atajos **«Curso anterior (…)»** y **«Vigente (…)»** en el propio diálogo. Después pulsa **Importar XML** dentro de ese curso: si el grupo coincide (misma unidad, año y evaluación) se **actualiza** ese curso; si es otro grupo, se crea como curso nuevo aislado.
 3. **Transferirlos desde un curso adyacente.** Si los datos ya están en otro curso (p. ej. 2024/2025), usa el botón de transferencia (↔) de ese curso para **copiarlos o moverlos** al adyacente 2025/2026 — los datos solo se transfieren entre años escolares consecutivos.
 
 Los cursos anteriores aparecen con la etiqueta **ANTERIOR**; si quieres blindarlos, **archívalos** (quedan protegidos contra borrado y en modo lectura). Y recuerda: el curso **VIGENTE** (el que está en marcha, 1 sep – 31 ago) nunca se puede borrar.
