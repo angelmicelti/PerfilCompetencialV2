@@ -1,10 +1,11 @@
-# Perfil Competencial LOMLOE · PWA (v2.1)
+# Perfil Competencial LOMLOE · PWA (v2.2)
 
 Aplicación web instalable (PWA) para evaluar y analizar el **perfil competencial del alumnado** a partir de los informes **NIVELES_COMPETENCIALES** exportados de **Séneca** (XML). Todo el diseño, la lógica y los estilos están incluidos **dentro de un único `index.html`** (el HTML contiene el CSS y el JavaScript).
 
 - 🔐 **Acceso con nombre de usuario y contraseña** — sin correo electrónico (dos perfiles: **usuario** y **administrador**)
+- 🏫 **Creación de cursos escolares** desde la propia app (nombre, enseñanza, año escolar, evaluación y convocatoria)
+- 🗂️ **Datos aislados por curso**: cada curso vive en su propio compartimento en el dispositivo y en la nube; los datos de un curso **nunca** se mezclan con los de otro
 - ☁️ **Sincronización automática** con Firebase Realtime Database tras cualquier cambio, con cola offline
-- 🗂️ **Datos aislados** en un nodo propio de la base de datos y separados por centro y curso/grupo
 - 📊 Matriz clicable alumno × competencia, análisis por competencia, ficha individual con navegación, estadísticas y **exportación a PDF**
 - 📴 Funciona **sin conexión** (Service Worker + copia local en el dispositivo)
 - 📱 Instalable en escritorio, tablet y móvil (GitHub Pages + manifest + Service Worker)
@@ -48,7 +49,7 @@ En [Firebase Console](https://console.firebase.google.com/) → proyecto `iesvdv
 1. Crea un repositorio en GitHub (por ejemplo `perfil-competencial`), puede ser público o privado.
 2. Sube **todo el contenido de esta carpeta** a la rama principal (`main`): `index.html`, `manifest.json`, `sw.js`, la carpeta `icons/`, `database.rules.json`, `.nojekyll` y este `README.md`.
    - Desde la web: *Add file → Upload files* (arrarra también la carpeta de iconos).
-   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.1" && git push`.
+   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.2" && git push`.
 3. En el repositorio: **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** → Branch: **main** / **/(root)** → *Save*.
 4. Espera 1-2 minutos. Tu aplicación estará en:
    `https://TUUSUARIO.github.io/NOMBRE-DEL-REPO/`
@@ -71,9 +72,30 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 
 ## 5. Uso diario
 
+### Creación de cursos escolares y aislamiento de datos (v2.2)
+
+El administrador puede crear cursos escolares directamente en la app, sin depender de un XML:
+
+1. **Inicio → Nuevo curso escolar** (también en *Administración → Cursos escolares*).
+2. Rellena: **nombre del grupo o unidad** (p. ej. `2º ESO B`), **enseñanza** (p. ej. `2º ESO`), **año escolar**, **evaluación** (1ª, 2ª, 3ª o Final) y **convocatoria**.
+3. El curso se crea **vacío** y se sincroniza con la nube al instante. Después puedes **importar su XML de Séneca dentro de él** (se actualizará sin tocar otros cursos) o dejarlo como registro manual.
+
+**Cómo se garantiza el aislamiento entre cursos:**
+
+| Medida | Qué implica |
+|---|---|
+| **Nodo propio por curso** | Cada curso se guarda en `nivelesCompetencialesIESvdv/{centro}/grupos/{curso}`: lista de alumnos, descriptores y estadísticas viven solo dentro de su nodo. |
+| **Claves únicas con sufijo** | Si dos cursos pudieran generar la misma clave (mismo nombre, año y evaluación), la app aísla el nuevo con sufijo `-2`, `-3`… comprobando también las claves ya ocupadas **en la nube**. Nunca se fusionan ni se pisan datos. |
+| **Reimportación segura** | Al importar un XML, si el curso ya existe (misma unidad, año y evaluación) se **actualiza**; si la referencia coincide con **otro** curso distinto, se crea como curso nuevo aislado y la app lo avisa antes de importar. |
+| **Operaciones acotadas** | Abrir, editar, exportar o eliminar solo afectan al curso activo: eliminar un curso no toca los datos de los demás (lo indica también el diálogo de confirmación). |
+| **Reglas de Firebase** | Las reglas solo permiten leer/escribir dentro de `grupos/{curso}` con los perfiles correspondientes; es imposible escribir en un curso desde la ruta de otro. |
+| **Copia por curso** | Botón de descarga (JSON) en cada curso: una copia de seguridad individual, restaurable desde *Ajustes → Restaurar copia*. |
+| **Cambiador de curso** | El chip de la cabecera muestra siempre el curso activo y, al pulsarlo, permite cambiar de curso (cada uno con sus datos completamente separados). |
+
 ### Administrador (quien instaló la app)
-- **Importar XML**: pestaña *Inicio → Importar XML* (o arrastrando el archivo). Cada unidad del XML se convierte en un grupo. Todo se sube solo a la nube.
-- **Añadir/eliminar cursos**: *Administración → Cursos y grupos* (importar, grupo vacío, eliminar en dispositivo y nube).
+- **Importar XML**: pestaña *Inicio → Importar XML* (o arrastrando el archivo). Cada unidad del XML se convierte en un curso. Todo se sube solo a la nube.
+- **Crear cursos escolares**: *Inicio → Nuevo curso escolar* (vacío, con año escolar y evaluación a elegir).
+- **Añadir/eliminar cursos**: *Administración → Cursos escolares* (crear, importar, abrir, copia JSON, eliminar en dispositivo y nube).
 - **Crear usuarios**: *Administración → Usuarios → Añadir usuario nuevo*: nombre, **nombre de usuario**, contraseña inicial y perfil (`usuario` o `administrador`). Comunica a cada persona su usuario y contraseña.
 - **Restablecer una contraseña** 🔑: botón de la llave en la fila del usuario (no se envía ningún correo).
 - **Desactivar / reactivar el acceso**: botón ✕ / ✓ (el perfil y sus datos se conservan).
