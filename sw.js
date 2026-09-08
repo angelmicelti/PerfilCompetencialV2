@@ -1,12 +1,12 @@
 /* =====================================================================
    Perfil Competencial LOMLOE · Service Worker (GitHub Pages / hosting)
-   v2.2 · La app es un único index.html (CSS y JS incluidos)
+   v2.3 · La app es un único index.html (CSS y JS incluidos)
    - Precachea el shell completo (todo es local, sin CDNs)
    - Navegaciones: red primero, caché como respaldo (offline)
    - Estáticos: caché primero + actualización en segundo plano
    - Las peticiones a Firebase (cross-origin) pasan directas a la red
    ===================================================================== */
-var VERSION = "perfil-competencial-v2.2";
+var VERSION = "perfil-competencial-v2.3";
 var SHELL = [
   "./",
   "./index.html",
