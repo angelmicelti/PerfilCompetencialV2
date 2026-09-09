@@ -6,7 +6,7 @@
    - Estáticos: caché primero + actualización en segundo plano
    - Las peticiones a Firebase (cross-origin) pasan directas a la red
    ===================================================================== */
-var VERSION = "perfil-competencial-v2.7";
+var VERSION = "perfil-competencial-v2.8";
 var SHELL = [
   "./",
   "./index.html",
