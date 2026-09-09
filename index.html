@@ -181,6 +181,18 @@ tr.year-row .btn{margin-left:10px; padding:3px 9px; font-size:11.5px}
 .pill.est-arc{background:#b45309}
 [data-theme="dark"] .pill.est-fut{background:#3b82f6}
 [data-theme="dark"] .pill.est-arc{background:#d97706}
+/* v2.7: sección Cursos escolares y avisos de peligro */
+.cur-sec{margin-bottom:14px}
+.cur-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+.cur-head h3{font-size:15.5px; margin:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.cur-anio{font-weight:800}
+.chk-cell{width:34px; text-align:center}
+.chk-cell input{width:15px; height:15px; accent-color:var(--primary); cursor:pointer}
+.table-scroll{overflow-x:auto; margin:0 -2px; padding:0 2px}
+@media (max-width:560px){ .cur-sec .col-opt{display:none} }
+.peligro{background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:12px; padding:10px 12px; font-size:12.5px; margin:10px 0; display:flex; gap:8px; align-items:flex-start; line-height:1.45}
+.peligro svg{flex:none; margin-top:1px}
+[data-theme="dark"] .peligro{background:rgba(220,38,38,.14); border-color:rgba(248,113,113,.35); color:#fca5a5}
 .curso-card.archivado{border-style:dashed; opacity:.85}
 .curso-card.archivado:hover{transform:none; box-shadow:0 4px 8px rgba(15,23,42,.06),0 18px 36px -16px rgba(15,23,42,.28)}
 .top-actions{margin-left:auto; display:flex; align-items:center; gap:6px}
@@ -639,7 +651,7 @@ pre.rules{
     <p class="login-sub">Conectando con Firebase</p>
   </div>
 
-  <p class="login-copy">v2.6 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
+  <p class="login-copy">v2.7 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
 </div>
 
 <!-- ============ APLICACIÓN ============ -->
@@ -654,7 +666,7 @@ pre.rules{
       <button class="cloudpill" id="cloudPill" data-action="abrirNube" title="Estado de la nube">
         <span class="dot"></span><span id="cloudPillTxt">Comprobando nube…</span>
       </button>
-      <div class="ver">v2.6 · PWA · GitHub Pages</div>
+      <div class="ver">v2.7 · PWA · GitHub Pages</div>
     </div>
   </aside>
   <div id="scrim" data-action="cerrarNav"></div>
@@ -679,6 +691,7 @@ pre.rules{
       <section class="view" id="view-competencias"></section>
       <section class="view" id="view-alumno"></section>
       <section class="view" id="view-stats"></section>
+      <section class="view" id="view-cursos"></section>
       <section class="view" id="view-admin"></section>
       <section class="view" id="view-ajustes"></section>
     </main>
@@ -715,6 +728,9 @@ var FIREBASE_CONFIG_DEFECTO = {
 var DB_ROOT = "nivelesCompetencialesIESvdv";
 var LS_STATE = "nc-pwa-state-v2";
 var LS_AUTH = "nc-pwa-auth-v2";
+/* PRIMER CURSO ESCOLAR del centro (v2.7): donde están los datos iniciales.
+   curso escolar = un AÑO completo (p. ej. 2025/2026) · grupo = una unidad (p. ej. 1º A) */
+var AE_PRIMER_CURSO = "2025/2026";
 
 function obtenerConfig(){
   try{
@@ -962,8 +978,12 @@ function asegurarCursoActivo(){
     var ds = grupoActivo();
     ae = ds ? annoEscolarDe(ds.meta) : null;
     if(!ae || cursos.indexOf(ae)<0){
-      var conDatos = cursos.filter(function(a){ return gruposDeCurso(a).length; });
-      ae = conDatos.length ? conDatos[conDatos.length-1] : cursos[cursos.length-1];
+      /* v2.7: por defecto se prefiere el PRIMER curso del centro (2025/2026) */
+      if(cursos.indexOf(AE_PRIMER_CURSO)>=0){ ae = AE_PRIMER_CURSO; }
+      else{
+        var conDatos = cursos.filter(function(a){ return gruposDeCurso(a).length; });
+        ae = conDatos.length ? conDatos[conDatos.length-1] : cursos[cursos.length-1];
+      }
     }
     S.cursoActivo = ae; cambio = true;
   }
@@ -1014,12 +1034,14 @@ function existeCursoEnAno(unidadNombre, cursoGeneral, periodo, convocatoria, des
   });
 }
 
-/* ===== ESTADO DEL CURSO ESCOLAR (v2.4) =====
+/* ===== ESTADO DEL CURSO ESCOLAR (v2.4, ajustado en v2.7) =====
    Un curso escolar va del 1 de septiembre de un año al 31 de agosto del siguiente.
-   - vigente:    el curso que está en marcha según la fecha real (no se puede eliminar)
+   - vigente:    el curso que está en marcha según la fecha real
    - finalizado: cursos anteriores ya terminados   ·   futuro: cursos aún no empezados
    - archivado:  marca opcional que protege el curso contra borrado (modo lectura)
-   El curso VIGENTE y los ARCHIVADOS no pueden eliminarse. */
+   v2.7: los ARCHIVADOS no pueden eliminarse (desarchiva primero). Cualquier otro
+   curso escolar —incluido el vigente— puede eliminarse CON TODOS sus datos tras un
+   aviso de peligro y escribiendo su año de inicio como confirmación. */
 function annoInicioVigente(d){
   d = d || new Date();
   return d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
@@ -1035,11 +1057,9 @@ function estadoCurso(ds){
   var v = annoInicioVigente();
   return a === v ? "vigente" : (a < v ? "finalizado" : "futuro");
 }
-/** Motivo por el que un curso no puede eliminarse ("" si se puede) */
+/** Motivo por el que un grupo no puede eliminarse ("" si se puede). v2.7: solo lo bloquea estar ARCHIVADO. */
 function motivoProteccion(ds){
-  if(ds && ds.meta && ds.meta.archivado) return "archivado";
-  if(ds && estadoCurso(ds) === "vigente") return "vigente";
-  return "";
+  return (ds && ds.meta && ds.meta.archivado) ? "archivado" : "";
 }
 function pillEstadoCurso(meta){
   meta = meta || {};
@@ -1849,6 +1869,7 @@ var VISTAS = [
   { id:"competencias", nombre:"Por competencia",  icono:"layers" },
   { id:"alumno",       nombre:"Alumno",           icono:"user" },
   { id:"stats",        nombre:"Estadísticas",     icono:"chart" },
+  { id:"cursos",       nombre:"Cursos escolares", icono:"book", soloAdmin:true },
   { id:"admin",        nombre:"Administración",   icono:"shield", soloAdmin:true },
   { id:"ajustes",      nombre:"Ajustes",          icono:"gear" }
 ];
@@ -1860,7 +1881,7 @@ function renderNav(){
   $("#nav").innerHTML = permitidas.map(function(v){
     return '<button class="navitem'+(S.view===v.id?" active":"")+'" data-action="ir" data-view="'+v.id+'">'+icon(v.icono)+'<span>'+v.nombre+'</span></button>';
   }).join("");
-  $("#bottomnav").innerHTML = permitidas.filter(function(v){return v.id!=="ajustes" && v.id!=="admin";}).map(function(v){
+  $("#bottomnav").innerHTML = permitidas.filter(function(v){return v.id!=="ajustes" && v.id!=="admin" && v.id!=="cursos";}).map(function(v){
     return '<button class="bn'+(S.view===v.id?" active":"")+'" data-action="ir" data-view="'+v.id+'"><span class="bnico">'+icon(v.icono,20)+'</span>'+v.nombre+'</button>';
   }).join("");
   $("#menuBtn").innerHTML = icon("menu");
@@ -1878,14 +1899,14 @@ function aplicarTema(){
   var btn = $("#themeBtn"); if(btn) btn.innerHTML = icon(temaEfectivo()==="dark"?"sun":"moon");
 }
 function renderTopbar(){
-  var titulos = {inicio:"Perfil Competencial", resumen:"Resumen del grupo", competencias:"Análisis por competencia", alumno:"Ficha del alumno", stats:"Estadísticas del grupo", admin:"Administración", ajustes:"Ajustes"};
+  var titulos = {inicio:"Perfil Competencial", resumen:"Resumen del grupo", competencias:"Análisis por competencia", alumno:"Ficha del alumno", stats:"Estadísticas del grupo", cursos:"Cursos escolares", admin:"Administración", ajustes:"Ajustes"};
   $("#topTitle").textContent = titulos[S.view] || "Perfil Competencial";
   var chip = $("#groupChip");
   var ae = asegurarCursoActivo();
   if(ae){
     var ds = grupoActivo();
     chip.style.display = "";
-    chip.innerHTML = icon("layers",13) + ' Curso ' + esc(ae) + (ds? ' · ' + esc(ds.meta.unidadNombre) : '') + (ds && ds.meta.archivado ? ' · ARCHIVADO' : '');
+    chip.innerHTML = icon("layers",13) + ' Curso escolar ' + esc(ae) + (ds? ' · Grupo ' + esc(ds.meta.unidadNombre) : '') + (ds && ds.meta.archivado ? ' · ARCHIVADO' : '');
   }else{ chip.style.display = "none"; }
 }
 function renderActual(){
@@ -1953,18 +1974,18 @@ function renderInicio(){
       '<button class="btn btn-primary" data-action="nuevoCurso">'+icon("plus")+' Nuevo curso escolar</button>'
     : '<button class="btn btn-primary" data-action="descargarDeNube">'+icon("cloudDown")+' Actualizar desde la nube</button>';
   if(!cursos.length){
-    h += '<div class="pagehead"><div><h2>Mis cursos</h2><div class="sub">'+(admin?"Los cambios se sincronizan automáticamente con la nube":"Perfil de consulta: los datos los gestiona el administrador")+' · Centro: '+esc(centroActualNombre())+'</div></div>' +
+    h += '<div class="pagehead"><div><h2>Mis cursos escolares</h2><div class="sub">'+(admin?"Los cambios se sincronizan automáticamente con la nube":"Perfil de consulta: los datos los gestiona el administrador")+' · Centro: '+esc(centroActualNombre())+'</div></div>' +
          '<div class="head-actions">'+acciones+'</div></div>';
     h += sinDatos("Aún no hay cursos escolares", admin
-      ? "Importa un informe de Séneca (NIVELES_COMPETENCIALES) para empezar: el curso se crea solo con el año que traiga el informe. Todo funciona también sin conexión."
+      ? "Crea el primer curso escolar ("+AE_PRIMER_CURSO+") o importa un informe de Séneca (NIVELES_COMPETENCIALES): el curso se crea solo con el año que traiga el informe. Todo funciona también sin conexión."
       : "Todavía no has descargado ningún curso. Pulsa el botón para traerlo de la nube.");
     return h;
   }
   var gs = gruposDeCurso(ae);
   var na = gs.reduce(function(n,g){ return n+g.alumnos.length; }, 0);
   /* Cabecera del curso activo: SOLO se ven los datos de este curso (aislamiento en pantalla) */
-  h += '<div class="pagehead"><div><h2>Curso '+esc(ae)+' '+pillEstadoCurso({annoEscolar:ae})+'</h2>' +
-       '<div class="sub">'+(gs.length? gs.length+' grupo'+(gs.length===1?'':'s')+' · '+na+' alumno'+(na===1?'':'s')+' · aislado de los demás cursos' : 'curso vacío: todavía sin grupos')+' · Centro: '+esc(centroActualNombre())+'</div></div>' +
+  h += '<div class="pagehead"><div><h2>Curso escolar '+esc(ae)+' '+pillEstadoCurso({annoEscolar:ae})+'</h2>' +
+       '<div class="sub">'+(gs.length? gs.length+' grupo'+(gs.length===1?'':'s')+' · '+na+' alumno'+(na===1?'':'s')+' · aislado de los demás cursos escolares' : 'curso vacío: todavía sin grupos')+' · Centro: '+esc(centroActualNombre())+'</div></div>' +
        '<div class="head-actions">' +
        (cursos.length>1
          ? '<select class="inp sel-curso" data-input="selCurso" title="Cambiar de curso escolar" aria-label="Curso escolar">' +
@@ -1974,8 +1995,8 @@ function renderInicio(){
   if(!gs.length){
     h += '<div class="card"><div class="empty-hero">' +
       '<div class="big">'+icon("book",40)+'</div>' +
-      '<h2 style="font-size:20px">El curso '+esc(ae)+' está vacío</h2>' +
-      '<p style="color:var(--muted); margin:0; font-size:13.5px">Sus grupos aparecerán aquí cuando importes el XML de Séneca de ese año o transfieras datos desde un curso adyacente. Cada curso es un compartimento aislado: nada se mezcla.</p>' +
+      '<h2 style="font-size:20px">El curso escolar '+esc(ae)+' está vacío</h2>' +
+      '<p style="color:var(--muted); margin:0; font-size:13.5px">Sus grupos aparecerán aquí cuando importes el XML de Séneca de ese año o transfieras datos desde un curso escolar adyacente. Cada curso es un compartimento aislado: nada se mezcla.</p>' +
       (admin? '<button class="btn btn-primary" data-action="importarClick">'+icon("upload")+' Importar XML de Séneca</button>' : '') +
       '</div></div>';
     return h;
@@ -1993,22 +2014,21 @@ function cardCurso(ds){
   var enNube = !!S.nubeGuardados[ds.key];
   var st = estadisticasGrupo(ds.alumnos);
   var arch = !!ds.meta.archivado;
-  var prot = motivoProteccion(ds);
   return '<div class="card curso-card'+(arch?" archivado":"")+'">' +
     (enNube ? '<span class="flag">EN LA NUBE</span>' : "") +
     '<div><h3>'+esc(ds.meta.unidadNombre)+' '+pillEstadoCurso(ds.meta)+'</h3><div style="font-size:12px;color:var(--muted)">'+esc(ds.meta.cursoGeneral)+(arch?' · <b>archivado: solo lectura</b>':"")+'</div></div>' +
     '<div class="meta">' +
-      '<span>'+icon("cal",14)+' '+esc(annoEscolarDe(ds.meta))+' · Período '+esc(ds.meta.periodo)+(ds.meta.convocatoria? ' · '+esc(ds.meta.convocatoria):"")+'</span>' +
+      '<span>'+icon("cal",14)+' Curso escolar '+esc(annoEscolarDe(ds.meta))+' · Período '+esc(ds.meta.periodo)+(ds.meta.convocatoria? ' · '+esc(ds.meta.convocatoria):"")+'</span>' +
       '<span>'+icon("users",14)+' '+ds.alumnos.length+' alumnos · '+st.totalDescriptores+' descriptores</span>' +
       '<span>'+icon("refresh",14)+' Importado '+haceTiempo(ds.meta.fechaCarga)+'</span>' +
     '</div>' +
     '<div class="actions">' +
       '<button class="btn btn-primary btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'">'+icon("grid",14)+' Abrir</button>' +
-      (Auth.esAdmin()? '<button class="btn btn-sm btn-icon" data-action="transferirDatos" data-key="'+esc(ds.key)+'" title="Transferir los datos de este curso a un curso adyacente (año escolar consecutivo)">'+icon("transfer",15)+'</button>' +
-              '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo curso para el año siguiente (vacío y aislado)">'+icon("copy",15)+'</button>' +
-              '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este curso">'+icon("download",15)+'</button>' +
+      (Auth.esAdmin()? '<button class="btn btn-sm btn-icon" data-action="transferirDatos" data-key="'+esc(ds.key)+'" title="Transferir los datos de este grupo a un grupo de un curso escolar adyacente (año consecutivo)">'+icon("transfer",15)+'</button>' +
+              '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo grupo en el curso escolar siguiente (vacío y aislado)">'+icon("copy",15)+'</button>' +
+              '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este grupo">'+icon("download",15)+'</button>' +
               '<button class="btn btn-sm btn-icon" data-action="'+(arch?"desarchivarCurso":"archivarCurso")+'" data-key="'+esc(ds.key)+'" title="'+(arch?"Desarchivar: vuelve a estar activo y editable":"Archivar: lo protege contra borrado (solo lectura)")+'">'+icon("arch",15)+'</button>' +
-              '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(prot==="vigente"?"El curso VIGENTE no se puede eliminar":prot==="archivado"?"El curso está archivado: no se puede eliminar":"Eliminar curso (dispositivo y nube)")+'">'+icon("trash",15)+'</button>' : "") +
+              '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(arch?"El grupo está archivado: desarchívalo para poder eliminarlo":"Eliminar este grupo (dispositivo y nube)")+'">'+icon("trash",15)+'</button>' : "") +
     '</div></div>';
 }
 function centroActualNombre(){
@@ -2174,7 +2194,7 @@ function refrescarNubeDlg(centro){
       h += '<div class="nube-row"><div class="info"><b>'+esc(g.meta.unidadNombre)+'</b>' +
         '<span>'+esc(g.meta.cursoGeneral||"")+' · '+esc(g.meta.anno)+' · P'+esc(g.meta.periodo)+(g.meta.convocatoria?' · '+esc(g.meta.convocatoria):"")+' · '+(g.meta.totalAlumnos||g.alumnos.length)+' alumnos'+(g.meta.archivado?' · ARCHIVADO':"")+'</span></div>' +
         '<button class="btn btn-sm btn-soft" data-action="nubeCargar" data-centro="'+esc(g.meta.codigoCentro)+'" data-key="'+esc(g.key)+'">'+icon("cloudDown",14)+' Cargar</button>' +
-        (admin? '<button class="btn btn-sm btn-icon" data-action="nubeEliminar" data-centro="'+esc(g.meta.codigoCentro)+'" data-key="'+esc(g.key)+'" data-arch="'+(g.meta.archivado?"1":"0")+'" data-anno="'+esc(g.meta.anno||"")+'" title="Eliminar de la nube">'+icon("trash",15)+'</button>' : "") +
+        (admin? '<button class="btn btn-sm btn-icon" data-action="nubeEliminar" data-centro="'+esc(g.meta.codigoCentro)+'" data-key="'+esc(g.key)+'" data-arch="'+(g.meta.archivado?"1":"0")+'" title="Eliminar este grupo de la nube">'+icon("trash",15)+'</button>' : "") +
         '</div>';
     });
     body.innerHTML = h;
@@ -2298,49 +2318,91 @@ function renderStats(){
   return h;
 }
 
+/* ============ VISTA: CURSOS ESCOLARES (v2.7, sección propia del menú) ============
+   Terminología clara: CURSO ESCOLAR = un año completo (p. ej. 2025/2026);
+   GRUPO = una unidad dentro de ese curso (p. ej. 1º A). Aquí se gestionan:
+   crear, generar el próximo año, transferir, archivar, y ELIMINAR grupos
+   (uno a uno o masivamente) y cursos escolares completos (con aviso de peligro). */
+function renderCursos(){
+  if(!Auth.esAdmin()) return sinDatos("Zona restringida","Esta sección solo está disponible para el perfil administrador.");
+  var cursos = cursosDisponibles();   /* ascendente: primero el curso más antiguo (2025/2026) */
+  var h = '<div class="pagehead"><div><h2>Cursos escolares</h2>' +
+    '<div class="sub">Un <b>curso escolar</b> es un año completo (p. ej. <b>2025/2026</b>); dentro de cada uno hay <b>grupos</b> (p. ej. <b>1º A</b>) con sus alumnos y niveles. Cada curso es un compartimento aislado, en el dispositivo y en la nube.</div></div>' +
+    '<div class="head-actions">' +
+    '<button class="btn" data-action="importarClick">'+icon("upload",15)+' Importar XML</button>' +
+    '<button class="btn" data-action="generarSiguientes">'+icon("cal",15)+' Generar próximo año</button>' +
+    '<button class="btn btn-primary" data-action="nuevoCurso">'+icon("plus",15)+' Nuevo curso escolar</button></div></div>';
+  if(!cursos.length){
+    h += '<div class="card"><div class="empty-hero"><div class="big">'+icon("book",40)+'</div>' +
+      '<h2 style="font-size:20px">Todavía no hay cursos escolares</h2>' +
+      '<p style="color:var(--muted); margin:0 0 14px; font-size:13.5px">Crea el primero (el curso <b>'+esc(AE_PRIMER_CURSO)+'</b>, donde están los datos actuales del centro) o importa directamente un XML de Séneca: el curso se crea solo.</p>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center">' +
+      '<button class="btn btn-primary" data-action="nuevoCurso" data-anno="'+esc(AE_PRIMER_CURSO)+'">'+icon("plus",15)+' Crear curso '+esc(AE_PRIMER_CURSO)+'</button>' +
+      '<button class="btn" data-action="importarClick">'+icon("upload",15)+' Importar XML de Séneca</button></div></div></div>';
+    return h;
+  }
+  h += cursos.map(seccionCurso).join("");
+  return h;
+}
+/** Sección de gestión de UN curso escolar: sus grupos, acciones por grupo y acciones del curso completo */
+function seccionCurso(ae){
+  var gs = gruposDeCurso(ae);
+  var na = gs.reduce(function(n,g){ return n+g.alumnos.length; }, 0);
+  var enPantalla = ae === S.cursoActivo;
+  var h = '<div class="card card-pad adm-sec cur-sec">';
+  h += '<div class="cur-head">' +
+    '<div><h3>'+icon("cal",17)+' Curso escolar <span class="cur-anio">'+esc(ae)+'</span> '+pillEstadoCurso({annoEscolar:ae})+(enPantalla? ' <span class="pill est-vig sm">EN PANTALLA</span>':'')+'</h3>' +
+    '<div class="desc" style="margin:4px 0 0">'+(gs.length? gs.length+' grupo'+(gs.length===1?'':'s')+': '+gs.map(function(g){ return esc(g.meta.unidadNombre); }).join(", ")+' · '+na+' alumno'+(na===1?'':'s') : 'curso vacío: todavía sin grupos')+'</div></div>' +
+    '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">' +
+    (enPantalla? '' : '<button class="btn btn-sm" data-action="activarCurso" data-ae="'+esc(ae)+'">'+icon("grid",14)+' Trabajar aquí</button>') +
+    '<button class="btn btn-sm btn-icon" data-action="eliminarCursoCompleto" data-ae="'+esc(ae)+'" title="Eliminar TODO este curso escolar con todos sus grupos y sus datos (pedirá escribir el año para confirmar)">'+icon("trash",15)+'</button>' +
+    '</div></div>';
+  if(!gs.length){
+    h += '<div class="hint">'+icon("info",14)+' Este curso escolar está <b>vacío</b>: sus grupos se crearán al <b>importar su XML de Séneca</b> o al <b>transferir datos desde un curso escolar adyacente</b>.</div></div>';
+    return h;
+  }
+  h += '<div class="table-scroll"><table class="users-t"><thead><tr>' +
+    '<th class="chk-cell"><input type="checkbox" class="gSelAll" data-ae="'+esc(ae)+'" title="Marcar todos los grupos de este curso escolar" aria-label="Marcar todos los grupos"></th>' +
+    '<th>Grupo</th><th class="col-opt">Enseñanza</th><th class="col-opt">Evaluación</th><th>Alumnos</th><th class="col-opt">Nube</th><th></th></tr></thead><tbody>';
+  gs.forEach(function(ds){
+    var arch = !!ds.meta.archivado;
+    var enNube = !!S.nubeGuardados[ds.key];
+    h += '<tr'+(arch?' style="opacity:.6"':'')+'>' +
+      '<td class="chk-cell"><input type="checkbox" class="gSelChk" data-ae="'+esc(ae)+'" value="'+esc(ds.key)+'" aria-label="Marcar el grupo '+esc(ds.meta.unidadNombre)+'"></td>' +
+      '<td><b>'+esc(ds.meta.unidadNombre)+'</b>'+(arch? ' <span class="pill est-arc sm">SOLO LECTURA</span>':'')+'<div class="uuid">'+esc(ds.key)+'</div></td>' +
+      '<td class="col-opt">'+esc(ds.meta.cursoGeneral)+'</td>' +
+      '<td class="col-opt">P'+esc(ds.meta.periodo)+(ds.meta.convocatoria? ' · '+esc(ds.meta.convocatoria):"")+'</td>' +
+      '<td>'+ds.alumnos.length+'</td>' +
+      '<td class="col-opt">'+(enNube? '<span class="pill lvl-SB sm">SÍ</span>' : '<span class="pill lvl-NA sm">NO</span>')+'</td>' +
+      '<td style="text-align:right; white-space:nowrap">' +
+      '<button class="btn btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'" title="Abrir este grupo">'+icon("grid",14)+'</button> ' +
+      '<button class="btn btn-sm btn-icon" data-action="transferirDatos" data-key="'+esc(ds.key)+'" title="Transferir los datos de este grupo a un grupo de un curso escolar adyacente">'+icon("transfer",15)+'</button> ' +
+      '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo grupo en el curso escolar siguiente (vacío y aislado)">'+icon("copy",15)+'</button> ' +
+      '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este grupo">'+icon("download",15)+'</button> ' +
+      '<button class="btn btn-sm btn-icon" data-action="'+(arch?"desarchivarCurso":"archivarCurso")+'" data-key="'+esc(ds.key)+'" title="'+(arch?"Desarchivar: vuelve a estar activo y editable":"Archivar: lo protege contra borrado (solo lectura)")+'">'+icon("arch",15)+'</button> ' +
+      '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(arch?"El grupo está archivado: desarchívalo para poder eliminarlo":"Eliminar este grupo (dispositivo y nube)")+'">'+icon("trash",15)+'</button></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  h += '<div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; align-items:center">' +
+    '<button class="btn btn-sm btn-danger" data-action="eliminarGruposMassivo" data-ae="'+esc(ae)+'">'+icon("trash",14)+' <span class="gm-n">Eliminar seleccionados</span></button>' +
+    '<span class="media-num">Marca con las casillas los grupos a eliminar en bloque; también puedes eliminarlos uno a uno con su papelera.</span></div>';
+  h += '</div>';
+  return h;
+}
+
 /* ============ VISTA: ADMINISTRACIÓN (solo administradores) ============ */
 function renderAdmin(){
   if(!Auth.esAdmin()) return sinDatos("Zona restringida","Esta pestaña solo está disponible para el perfil administrador.");
   var h = '';
-  h += '<div class="pagehead"><div><h2>Administración</h2><div class="sub">Gestión de cursos/grupos y de usuarios con sus perfiles. Todo cambio se sincroniza automáticamente con la nube.</div></div>' +
+  h += '<div class="pagehead"><div><h2>Administración</h2><div class="sub">Gestión de usuarios y perfiles. La gestión de los cursos escolares tiene su propia sección del menú lateral. Todo cambio se sincroniza automáticamente con la nube.</div></div>' +
        '<div class="head-actions"><button class="btn" data-action="abrirNube">'+icon("cloud")+' Ver nube</button></div></div>';
   h += '<div class="adm-grid">';
 
-  /* --- Cursos y grupos (agrupados por curso escolar, v2.6) --- */
+  /* --- Cursos escolares: tienen su propia sección (v2.7) --- */
   h += '<div class="card card-pad adm-sec"><h3>'+icon("book",17)+' Cursos escolares</h3>' +
-    '<div class="desc">Cada curso escolar es un <b>compartimento aislado</b>: tiene sus propios grupos, su lista de alumnos, sus descriptores y sus estadísticas, tanto en este dispositivo como en la nube. <b>Los datos de un curso nunca se mezclan con los de otro.</b> Crea cursos de <b>cualquier año</b> (anteriores, vigente o futuros), genera los del año siguiente, <b>transfiere datos entre cursos adyacentes</b> e <b>archiva</b> los que quieras proteger. No se pueden eliminar el curso <b>vigente</b> (septiembre–agosto en curso) ni los <b>archivados</b>.</div>';
-  var cursosAdmin = cursosDisponibles().slice().reverse();
-  if(cursosAdmin.length===0){
-    h += '<div class="sin-usuarios">No hay cursos en este dispositivo. Crea el primero o importa un XML de Séneca.</div>';
-  }else{
-    h += '<table class="users-t"><thead><tr><th>Curso</th><th>Enseñanza</th><th>Año escolar</th><th>Estado</th><th>Alumnos</th><th>Nube</th><th></th></tr></thead><tbody>';
-    cursosAdmin.forEach(function(ae){
-      var gsAe = gruposDeCurso(ae);
-      h += '<tr class="year-row"><td colspan="7"><b>Curso '+esc(ae)+'</b> '+pillEstadoCurso({annoEscolar:ae})+'<span class="yr-n">'+(gsAe.length? gsAe.length+' grupo'+(gsAe.length===1?'':'s') : 'vacío')+'</span>' +
-        (gsAe.length===0 && annoInicioDe(ae)!==annoInicioVigente()
-          ? '<button class="btn btn-sm" data-action="eliminarCursoVacio" data-ae="'+esc(ae)+'" title="Elimina este curso todavía sin datos">'+icon("trash",13)+' Eliminar</button>'
-          : '') + '</td></tr>';
-      gsAe.forEach(function(ds){
-        var enNube = !!S.nubeGuardados[ds.key];
-        var prot = motivoProteccion(ds);
-        var arch = !!ds.meta.archivado;
-        h += '<tr><td><b>'+esc(ds.meta.unidadNombre)+'</b><div class="uuid">'+esc(ds.key)+'</div></td>' +
-          '<td>'+esc(ds.meta.cursoGeneral)+'</td><td>'+esc(annoEscolarDe(ds.meta))+'</td>' +
-          '<td>'+pillEstadoCurso(ds.meta)+'</td><td>'+ds.alumnos.length+'</td>' +
-          '<td>'+(enNube? '<span class="pill lvl-SB sm">SÍ</span>' : '<span class="pill lvl-NA sm">NO</span>')+'</td>' +
-          '<td style="text-align:right; white-space:nowrap">' +
-          '<button class="btn btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'" title="Abrir este curso">'+icon("grid",14)+'</button> ' +
-          '<button class="btn btn-sm btn-icon" data-action="transferirDatos" data-key="'+esc(ds.key)+'" title="Transferir datos a un curso adyacente (año consecutivo)">'+icon("transfer",15)+'</button> ' +
-          '<button class="btn btn-sm btn-icon" data-action="duplicarSiguiente" data-key="'+esc(ds.key)+'" title="Generar este mismo curso para el año siguiente (vacío y aislado)">'+icon("copy",15)+'</button> ' +
-          '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este curso">'+icon("download",15)+'</button> ' +
-          '<button class="btn btn-sm btn-icon" data-action="'+(arch?"desarchivarCurso":"archivarCurso")+'" data-key="'+esc(ds.key)+'" title="'+(arch?"Desarchivar (vuelve a estar activo)":"Archivar: protege contra borrado (solo lectura)")+'">'+icon("arch",15)+'</button> ' +
-          '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(prot==="vigente"?"El curso VIGENTE no se puede eliminar":prot==="archivado"?"Curso archivado: no se puede eliminar":"Eliminar curso (dispositivo y nube)")+'">'+icon("trash",15)+'</button></td></tr>';
-      });
-    });
-    h += '</tbody></table>';
-  }
-  h += '<div class="rule-head"><b>Crear, generar, transferir e importar cursos</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
-    '<button class="btn btn-primary btn-sm" data-action="generarSiguientes" title="Crea de una vez los cursos del año siguiente, vacíos y aislados">'+icon("cal",14)+' Generar próximo año</button>' +
+    '<div class="desc">Un <b>curso escolar</b> es un año completo (p. ej. <b>2025/2026</b>) y contiene <b>grupos</b> (p. ej. <b>1º A</b>). La gestión completa —crear, generar el próximo año, transferir entre adyacentes, archivar, eliminar grupos <b>uno a uno o masivamente</b> y eliminar cursos escolares completos con aviso de peligro— está en la sección «Cursos escolares» del menú lateral.</div>' +
+    '<button class="btn btn-primary btn-sm" data-action="ir" data-view="cursos">'+icon("book",14)+' Abrir Cursos escolares</button>' +
+    '<div class="rule-head" style="margin-top:14px"><b>Atajos</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
     '<button class="btn btn-sm" data-action="nuevoCurso">'+icon("plus",14)+' Nuevo curso escolar</button>' +
     '<button class="btn btn-sm" data-action="importarClick">'+icon("upload",14)+' Importar XML</button></div></div></div>';
 
@@ -2476,7 +2538,7 @@ function renderAjustes(){
     '</div></div>';
   /* Acerca de */
   h += '<div class="card card-pad set-sec"><h3>'+icon("info",17)+' Acerca de</h3>' +
-    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.5 (acceso por usuario y contraseña; cursos de cualquier año —incluidos anteriores como 2025/2026— con transferencia entre adyacentes, archivo y protección del curso vigente) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
+    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.7 (sección «Cursos escolares» en el menú lateral; primer curso del centro: 2025/2026; eliminación de cursos escolares completos con aviso de peligro y confirmación escribiendo el año; eliminación de grupos uno a uno o masiva; cursos de cualquier año con transferencia entre adyacentes y archivo) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
   return h;
 }
 
@@ -2487,6 +2549,7 @@ var RENDER = {
   competencias: renderCompetencias,
   alumno: renderAlumno,
   stats: renderStats,
+  cursos: renderCursos,
   admin: renderAdmin,
   ajustes: renderAjustes
 };
@@ -2572,6 +2635,22 @@ function enviarPrimerAcceso(e){
 }
 
 /* ============ ACCIONES ============ */
+/** Elimina ya (dispositivo + cola de nube) los grupos indicados. Devuelve {grupos, alumnos}.
+    Omite los archivados (protegidos). No renderiza: cada acción decide el repintado. */
+function eliminarGruposAhora(keys){
+  var res = {grupos:0, alumnos:0};
+  keys.forEach(function(key){
+    var ds = S.datasets[key]; if(!ds || ds.meta.archivado) return;
+    res.grupos++; res.alumnos += ds.alumnos.length;
+    var centro = ds.meta.codigoCentro;
+    delete S.datasets[key];
+    S.cola = S.cola.filter(function(op){ return !(op.t==="save" && op.key===key); });
+    delete S.nubeGuardados[key];
+    if(S.activeKey===key){ S.activeKey = null; S.alumnoIdx = 0; }
+    encolar({ t:"del", centro:centro, key:key, ts:Date.now() });
+  });
+  return res;
+}
 /** Transferencia: muestra la casilla de sobrescritura cuando el destino elegido tiene datos */
 function trRefrescarSobrescribir(){
   var area = $("#trSobresArea"); if(!area) return;
@@ -2582,6 +2661,15 @@ function trRefrescarSobrescribir(){
     area.innerHTML = '<label class="gs-row" style="border-color:#fcd34d"><input type="checkbox" id="trAck">' +
       '<span class="gs-main"><b>Sobrescribir el destino</b><span>«'+esc(dst.meta.unidadNombre)+'» ('+esc(annoEscolarDe(dst.meta))+') tiene '+dst.alumnos.length+' alumno'+(dst.alumnos.length===1?"":"s")+': se <b>reemplazarán</b> por los del curso origen.</span></span></label>';
   }else{ area.hidden = true; area.innerHTML = ""; }
+}
+/** Actualiza el contador del botón «Eliminar seleccionados» de un curso escolar (v2.7) */
+function refrescarConteoSel(ae){
+  var btn = document.querySelector('[data-action="eliminarGruposMassivo"][data-ae="'+ae+'"]');
+  if(!btn) return;
+  var n = $all('.gSelChk[data-ae="'+ae+'"]').filter(function(ch){ return ch.checked; }).length;
+  var sp = btn.querySelector(".gm-n");
+  var txt = n ? ("Eliminar seleccionados ("+n+")") : "Eliminar seleccionados";
+  if(sp) sp.textContent = txt; else btn.textContent = txt;
 }
 var ACTIONS = {
   ir: function(el){ ir(el.dataset.view); },
@@ -2659,24 +2747,19 @@ var ACTIONS = {
     if(!Auth.esAdmin()) return;
     var key = el.dataset.key;
     var ds = S.datasets[key]; if(!ds) return;
-    /* PROTECCIONES (v2.4): ni el curso vigente ni los archivados se pueden eliminar */
-    if(ds.meta.archivado){ toast("El curso está ARCHIVADO y no se puede eliminar. Desarchívalo primero si de verdad quieres borrarlo.","warn"); return; }
-    if(estadoCurso(ds)==="vigente"){ toast("El curso VIGENTE ("+annoEscolarDe(ds.meta)+") no se puede eliminar. Archívalo si quieres conservarlo protegido.","warn"); return; }
-    confirmar("¿Eliminar curso?",
-      "Se eliminará <b>"+esc(ds.meta.unidadNombre)+"</b> ("+esc(grupoTitulo(ds))+") de este dispositivo <b>y de la nube</b>. Los demás dispositivos lo perderán. Esta acción no se puede deshacer. <b>Los datos de los demás cursos no se ven afectados.</b>",
-      "Eliminar", function(){
-        var centro = ds.meta.codigoCentro;
-        delete S.datasets[key];
-        S.cola = S.cola.filter(function(op){ return !(op.t==="save" && op.key===key); });
-        delete S.nubeGuardados[key];
-        if(S.activeKey===key) S.activeKey = null;
-        asegurarGrupoActivo(); guardarEstado();
-        nubeEliminar(centro, key).then(function(){
-          S.ultimaSync = new Date().toISOString(); guardarEstado(); refrescarEstadoNubeUI();
-          toast("Curso eliminado del dispositivo y de la nube","ok");
-        }).catch(function(e){
-          toast("Eliminado del dispositivo; no se pudo borrar en la nube: "+(e.message||e),"warn");
-        }).then(function(){ renderActual(); });
+    /* PROTECCIÓN (v2.7): solo lo bloquea estar ARCHIVADO (el curso vigente se puede
+       eliminar, pero con un aviso extra). */
+    if(ds.meta.archivado){ toast("Este grupo está ARCHIVADO (solo lectura) y no se puede eliminar. Desarchívalo primero.","warn"); return; }
+    var ae = annoEscolarDe(ds.meta);
+    var vig = estadoCurso(ds)==="vigente";
+    confirmar("¿Eliminar el grupo "+esc(ds.meta.unidadNombre)+"?",
+      "Se eliminará el <b>grupo "+esc(ds.meta.unidadNombre)+"</b> del curso escolar <b>"+esc(ae)+"</b> ("+ds.alumnos.length+" alumno"+(ds.alumnos.length===1?"":"s")+") de este dispositivo <b>y de la nube</b> (los demás dispositivos lo perderán). Los demás grupos y cursos escolares no se ven afectados. Esta acción no se puede deshacer." +
+      (vig? '<br><br><b style="color:#dc2626">Atención: este grupo pertenece al curso escolar VIGENTE ('+esc(ae)+'). Comprueba que es el grupo correcto.</b>' : ''),
+      "Eliminar grupo", function(){
+        var res = eliminarGruposAhora([key]);
+        if(!res.grupos){ renderActual(); return; }
+        asegurarCursoActivo(); guardarEstado(); sincronizar(false); renderActual();
+        toast("Grupo "+esc(ds.meta.unidadNombre)+" eliminado del dispositivo y de la nube","ok");
       });
   },
   nuevoCurso: function(el){
@@ -2687,7 +2770,8 @@ var ACTIONS = {
     var opciones = [];
     for(var i=-10; i<=3; i++) opciones.push((hoyVig+i)+"/"+(hoyVig+i+1));
     var prefill = (el && el.dataset && el.dataset.anno && /^\d{4}\/\d{4}$/.test(el.dataset.anno)) ? el.dataset.anno : "";
-    var actual = prefill || aeVigente();
+    /* v2.7: si aún no existe ningún curso escolar, se sugiere el PRIMER curso (2025/2026) */
+    var actual = prefill || (cursosDisponibles().length===0 ? AE_PRIMER_CURSO : aeVigente());
     if(opciones.indexOf(actual)<0) opciones.unshift(actual);
     var opcionesHtml = opciones.map(function(o){
       var ai = annoInicioDe(o);
@@ -2756,7 +2840,7 @@ var ACTIONS = {
     var ba = parseInt(String(destino).split("/")[0], 10); if(isNaN(ba)) ba = ini+1;
     for(var i=-2; i<=3; i++) sugerencias.push((ba+i)+"/"+(ba+i+1));
     var h = dlgHead(icon("cal",20)+' Generar el próximo año escolar',
-      'Crea de una vez, <b>vacíos y aislados</b>, los cursos del año siguiente');
+      'Crea de una vez, <b>vacíos y aislados</b>, los grupos del curso escolar siguiente');
     h += '<div class="dlg-body">' +
       '<div class="adm-form">' +
       '<div class="field"><label>Año de origen</label><select class="inp" id="gsOrigen">' +
@@ -2765,7 +2849,7 @@ var ACTIONS = {
       '<div class="field"><label>Año escolar nuevo</label><input class="inp" id="gsDestino" value="'+esc(destino)+'" list="gsAnosLista" maxlength="9" placeholder="p. ej. 2026/2027">' +
         '<datalist id="gsAnosLista">'+ sugerencias.map(function(o){ return '<option value="'+o+'"></option>'; }).join("") +'</datalist></div>' +
       '</div>' +
-      '<div class="hint">'+icon("copy",14)+' De cada curso marcado se copia la <b>estructura</b> (grupo, enseñanza, evaluación y convocatoria), <b>sin alumnos ni notas</b>. Después importarás dentro de cada curso nuevo su XML de Séneca.</div>' +
+      '<div class="hint">'+icon("copy",14)+' De cada <b>grupo</b> marcado se copia la <b>estructura</b> (enseñanza, evaluación y convocatoria) al año nuevo, <b>sin alumnos ni notas</b>. Después importarás dentro de cada grupo nuevo su XML de Séneca.</div>' +
       '<div id="gsLista">' +
         gruposLocales().map(function(ds){
           var ae = annoEscolarDe(ds.meta);
@@ -2810,7 +2894,7 @@ var ACTIONS = {
       S.activeKey = claves[0]; guardarEstado();
       registrarCurso(destino, {origen:"siguiente"});
       sincronizarCambios(claves); /* auto-sync: los cursos nuevos suben a la nube solos */
-      var msg = claves.length+" curso"+(claves.length>1?"s":"")+" de "+destino+" creado"+(claves.length>1?"s":"")+" (vacíos y aislados)";
+      var msg = claves.length+" grupo"+(claves.length>1?"s":"")+" de "+destino+" creado"+(claves.length>1?"s":"")+" (vacíos y aislados)";
       if(omitidos.length) msg += " · ya existían: "+omitidos.join(", ");
       toast(msg,"ok");
       S.view = "inicio"; renderActual();
@@ -2823,20 +2907,20 @@ var ACTIONS = {
     var destino = siguienteAnoEscolar(annoEscolarDe(ds.meta));
     if(!destino){ toast("No se pudo deducir el año siguiente de este curso","warn"); return; }
     if(existeCursoEnAno(ds.meta.unidadNombre, ds.meta.cursoGeneral, ds.meta.periodo, ds.meta.convocatoria, destino)){
-      toast("Ya existe «"+ds.meta.unidadNombre+"» en "+destino+": no se crea duplicado","warn"); return;
+      toast("Ya existe el grupo «"+ds.meta.unidadNombre+"» en "+destino+": no se crea duplicado","warn"); return;
     }
     var nds = cursoDeSiguienteAno(ds, destino);
-    confirmar('Generar curso para '+destino,
-      'Se creará el curso <b>'+esc(nds.meta.unidadNombre)+'</b> · '+esc(destino)+' · P'+esc(nds.meta.periodo)+(nds.meta.convocatoria?' · '+esc(nds.meta.convocatoria):"")+
-      ' como un <b>compartimento nuevo y aislado</b>, vacío (sin alumnos ni notas). El curso '+esc(annoEscolarDe(ds.meta))+' no se toca.',
-      'Crear curso '+destino, function(){
+    confirmar('Generar grupo para '+destino,
+      'Se creará el <b>grupo '+esc(nds.meta.unidadNombre)+'</b> en el curso escolar '+esc(destino)+' · P'+esc(nds.meta.periodo)+(nds.meta.convocatoria?' · '+esc(nds.meta.convocatoria):"")+
+      ' como un <b>compartimento nuevo y aislado</b>, vacío (sin alumnos ni notas). El curso escolar '+esc(annoEscolarDe(ds.meta))+' no se toca.',
+      'Crear grupo en '+destino, function(){
         var aplicar = function(ocupadasNube){
           nds.key = claveLibre(nds.key, ocupadasNube||null);
           importarDatasets([nds]);
           S.cursoActivo = destino; S.activeKey = nds.key; guardarEstado();
           registrarCurso(destino, {origen:"siguiente"});
           sincronizarCambios([nds.key]);
-          toast("Curso «"+nds.meta.unidadNombre+"» ("+destino+") creado vacío y aislado","ok");
+          toast("Grupo «"+nds.meta.unidadNombre+"» ("+destino+") creado vacío y aislado","ok");
           S.view = "inicio"; renderActual();
         };
         conClavesNube(aplicar);
@@ -2882,17 +2966,17 @@ var ACTIONS = {
       'Origen: <b>'+esc(grupoTitulo(src))+'</b> · '+src.alumnos.length+' alumno'+(src.alumnos.length===1?"":"s"));
     h += '<div class="dlg-body">';
     if(src.alumnos.length===0){
-      h += '<div class="hint warn">'+icon("info",14)+' El curso origen está <b>vacío</b>: no hay alumnos que transferir.</div></div>' +
+      h += '<div class="hint warn">'+icon("info",14)+' El grupo origen está <b>vacío</b>: no hay alumnos que transferir.</div></div>' +
         '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cerrar</button></div>';
       openDialog(h); return;
     }
-    h += '<div class="hint">'+icon("info",14)+' Los datos solo se pueden transferir entre <b>cursos adyacentes</b> (años escolares consecutivos): '+esc(anioAnt)+' ↔ <b>'+esc(ae)+'</b> ↔ '+esc(anioSig)+'.</div>';
+    h += '<div class="hint">'+icon("info",14)+' Los datos solo se pueden transferir a <b>grupos de cursos escolares adyacentes</b> (años escolares consecutivos): '+esc(anioAnt)+' ↔ <b>'+esc(ae)+'</b> ↔ '+esc(anioSig)+'.</div>';
     var candidatos = gruposLocales().filter(function(g){
       return g.key !== src.key && (annoEscolarDe(g.meta) === anioAnt || annoEscolarDe(g.meta) === anioSig);
     });
     var habilitados = candidatos.filter(function(g){ return !g.meta.archivado; });
     if(candidatos.length){
-      h += '<div style="margin:12px 0 6px; font-weight:600; font-size:13px">Curso destino (año adyacente)</div>';
+      h += '<div style="margin:12px 0 6px; font-weight:600; font-size:13px">Grupo destino (de un curso escolar adyacente)</div>';
       h += candidatos.map(function(g){
         var bloqueado = !!g.meta.archivado;
         var ady = annoEscolarDe(g.meta) === anioAnt ? "anterior" : "siguiente";
@@ -2913,10 +2997,10 @@ var ACTIONS = {
       (estadoCurso(src)==="vigente"? '<div class="hint warn" style="margin-top:8px">'+icon("alert",14)+' El curso origen es el <b>vigente</b>: comprueba bien el destino antes de mover sus datos.</div>' : '') +
       '<div id="trSobresArea" hidden style="margin-top:8px"></div>';
     if(!candidatos.length){
-      h += '<div class="hint warn" style="margin-top:10px">'+icon("info",14)+' No hay cursos en '+esc(anioAnt)+' ni en '+esc(anioSig)+'. Crea uno con la misma estructura y se le copiarán los datos:</div>' +
+      h += '<div class="hint warn" style="margin-top:10px">'+icon("info",14)+' No hay grupos en los cursos escolares adyacentes ('+esc(anioAnt)+' ni '+esc(anioSig)+'). Crea uno con la misma estructura y se le copiarán los datos:</div>' +
         '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">' +
-        '<button class="btn btn-soft" data-action="transferirCrearAdyacente" data-key="'+esc(src.key)+'" data-destino="'+esc(anioAnt)+'">'+icon("plus",14)+' Crear curso en '+esc(anioAnt)+'</button>' +
-        '<button class="btn btn-soft" data-action="transferirCrearAdyacente" data-key="'+esc(src.key)+'" data-destino="'+esc(anioSig)+'">'+icon("plus",14)+' Crear curso en '+esc(anioSig)+'</button></div>';
+        '<button class="btn btn-soft" data-action="transferirCrearAdyacente" data-key="'+esc(src.key)+'" data-destino="'+esc(anioAnt)+'">'+icon("plus",14)+' Crear grupo en '+esc(anioAnt)+'</button>' +
+        '<button class="btn btn-soft" data-action="transferirCrearAdyacente" data-key="'+esc(src.key)+'" data-destino="'+esc(anioSig)+'">'+icon("plus",14)+' Crear grupo en '+esc(anioSig)+'</button></div>';
     }
     h += '</div>' +
       '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
@@ -2936,9 +3020,9 @@ var ACTIONS = {
     var modo = modoEl ? modoEl.value : "copiar";
     if(dst.alumnos.length && !($("#trAck") && $("#trAck").checked)){ toast("Confirma la casilla de sobrescritura del curso destino","warn"); return; }
     var n = src.alumnos.length;
-    if(n===0){ toast("El curso origen no tiene alumnos","warn"); return; }
+    if(n===0){ toast("El grupo origen no tiene alumnos","warn"); return; }
     confirmar((modo==="mover"?"¿Mover ":"¿Copiar ")+n+" alumno"+(n===1?"":"s")+"?",
-      "Se transferirán los alumnos de <b>"+esc(grupoTitulo(src))+"</b> al curso <b>"+esc(grupoTitulo(dst))+"</b>. " +
+      "Se transferirán los alumnos del <b>grupo "+esc(src.meta.unidadNombre)+"</b> ("+esc(grupoTitulo(src))+") al <b>grupo "+esc(dst.meta.unidadNombre)+"</b> ("+esc(grupoTitulo(dst))+"). " +
       (modo==="mover"?"El origen quedará <b>vacío</b>.":"El origen <b>conserva</b> sus datos.") +
       (dst.alumnos.length? " Los <b>"+dst.alumnos.length+"</b> alumnos actuales del destino se <b>reemplazarán</b>." : "") +
       " Cada curso seguirá siendo un compartimento aislado.",
@@ -2961,8 +3045,8 @@ var ACTIONS = {
     if(!/^\d{4}\/\d{4}$/.test(destino)){ toast("Año escolar no válido","warn"); return; }
     var nds = cursoDeSiguienteAno(src, destino);
     nds.meta.origen = "transferencia";
-    confirmar("Crear curso adyacente y transferir",
-      "Se creará el curso <b>"+esc(nds.meta.unidadNombre)+"</b> · "+esc(destino)+" · P"+esc(nds.meta.periodo)+" (vacío y aislado) y a continuación se <b>copiarán</b> sus "+src.alumnos.length+" alumno"+(src.alumnos.length===1?"":"s")+" desde "+esc(grupoTitulo(src))+". El curso origen no se modifica.",
+    confirmar("Crear grupo adyacente y transferir",
+      "Se creará el <b>grupo "+esc(nds.meta.unidadNombre)+"</b> en el curso escolar "+esc(destino)+" (vacío y aislado) y a continuación se <b>copiarán</b> sus "+src.alumnos.length+" alumno"+(src.alumnos.length===1?"":"s")+" desde "+esc(grupoTitulo(src))+". El grupo origen no se modifica.",
       "Crear y transferir", function(){
         var aplicar = function(ocupadasNube){
           nds.key = claveLibre(nds.key, ocupadasNube||null);
@@ -2974,7 +3058,7 @@ var ACTIONS = {
           registrarCurso(destino, {origen:"transferencia"});
           sincronizarCambios([nds.key]);
           cerrarDlg();
-          toast("Curso creado en "+destino+" con "+nds.alumnos.length+" alumno"+(nds.alumnos.length===1?"":"s")+" transferido"+(nds.alumnos.length===1?"":"s"),"ok");
+          toast("Grupo creado en "+destino+" con "+nds.alumnos.length+" alumno"+(nds.alumnos.length===1?"":"s")+" transferido"+(nds.alumnos.length===1?"":"s"),"ok");
           S.view = "inicio"; renderActual();
         };
         conClavesNube(aplicar);
@@ -3008,7 +3092,7 @@ var ACTIONS = {
     });
     h += '</div>';
     var gsSel = gruposDeCurso(_dlgCurso);
-    h += '<div style="font-weight:600; font-size:13px; margin:14px 0 8px">2 · Grupo de '+esc(_dlgCurso)+'</div>';
+    h += '<div style="font-weight:600; font-size:13px; margin:14px 0 8px">2 · Grupos del curso '+esc(_dlgCurso)+'</div>';
     if(gsSel.length){
       h += '<div class="curso-elegir">';
       gsSel.forEach(function(ds){
@@ -3037,23 +3121,82 @@ var ACTIONS = {
     _dlgCurso = null; cerrarDlg();
     ponerCursoActivo(el.dataset.ae, "inicio");
   },
-  /* Elimina un curso escolar todavía SIN grupos (nunca el vigente) */
-  eliminarCursoVacio: function(el){
-    if(!Auth.esAdmin()){ toast("Solo el administrador puede eliminar cursos","warn"); return; }
+  /* ===== ELIMINAR CURSO ESCOLAR COMPLETO (v2.7): borra el año con TODOS sus grupos y datos =====
+     Pide escribir el año de inicio del curso como confirmación (aviso de peligro).
+     Los archivados siguen protegidos: hay que desarchivarlos primero. */
+  eliminarCursoCompleto: function(el){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede eliminar cursos escolares","warn"); return; }
     var ae = el.dataset.ae || "";
-    if(gruposDeCurso(ae).length){ toast("Ese curso ya tiene grupos: elimínalos desde su tarjeta","warn"); return; }
-    if(annoInicioDe(ae) === annoInicioVigente()){ toast("El curso VIGENTE ("+ae+") no se puede eliminar.","warn"); return; }
-    confirmar("¿Eliminar el curso vacío "+ae+"?",
-      "Se eliminará el curso escolar <b>"+esc(ae)+"</b>, que todavía está vacío, de este dispositivo y de la nube.",
-      "Eliminar", function(){
-        if(S.cursos) delete S.cursos[ae];
-        if(S.cursoActivo===ae) S.cursoActivo = null;
-        asegurarCursoActivo(); guardarEstado();
-        encolar({ t:"cursoDel", ae:ae, centro:centroCodigoActual(), ts:Date.now() });
-        sincronizar(false);
-        renderActual();
-        toast("Curso vacío "+ae+" eliminado","ok");
-      });
+    var gs = gruposDeCurso(ae);
+    if(gs.some(function(g){ return g.meta.archivado; })){
+      toast("Este curso escolar tiene grupos ARCHIVADOS (solo lectura). Desarchívalos primero si quieres eliminar el curso completo.","warn"); return;
+    }
+    var na = gs.reduce(function(n,g){ return n+g.alumnos.length; }, 0);
+    var esperado = annoInicioDe(ae);
+    var vig = annoInicioDe(ae) === annoInicioVigente();
+    var h = dlgHead(icon("alert",20)+' ¿Eliminar el curso escolar '+esc(ae)+'?', 'Acción irreversible: se borran TODOS los datos de este curso escolar');
+    h += '<div class="dlg-body">' +
+      '<div class="peligro">'+icon("alert",16)+'<div><b>ACCIÓN IRREVERSIBLE.</b> Se eliminará el curso escolar <b>'+esc(ae)+'</b> con <b>TODOS</b> sus datos: '+gs.length+' grupo'+(gs.length===1?'':'s')+(gs.length? ' ('+gs.map(function(g){ return esc(g.meta.unidadNombre); }).join(', ')+')' : '')+' con '+na+' alumno'+(na===1?'':'s')+', sus niveles por descriptor, sus estadísticas y sus informes PDF. Se borrará de este dispositivo <b>y de la nube (Firebase)</b>: los demás dispositivos también lo perderán. Los demás cursos escolares no se ven afectados.</div></div>' +
+      (vig? '<div class="peligro">'+icon("alert",16)+'<div><b>Atención: este es el curso escolar VIGENTE</b> (1 sep '+esc(String(ae).split("/")[0])+' – 31 ago '+esc(String(ae).split("/")[1])+'). Si lo eliminas, perderás los datos del curso en marcha.</div></div>' : '') +
+      (gs.length===0? '<div class="hint">Este curso escolar todavía no tiene grupos: solo se eliminará su registro.</div>' : '<div class="hint">Si quieres conservar una copia, exporta antes los grupos con el botón de descarga (⬇) de cada grupo.</div>') +
+      '<div class="field" style="margin-top:12px"><label>Escribe <b>'+esc(esperado)+'</b> (el año de inicio del curso) para confirmar</label>' +
+      '<input class="inp" id="ecAnno" data-esperado="'+esc(esperado)+'" autocomplete="off" inputmode="numeric" placeholder="'+esc(esperado)+'"></div>' +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-danger" id="ecOk" data-action="eliminarCursoEjecutar" data-ae="'+esc(ae)+'" data-esperado="'+esc(esperado)+'" disabled>'+icon("trash",15)+' Eliminar curso escolar completo</button></div>';
+    openDialog(h);
+    setTimeout(function(){ var i=$("#ecAnno"); if(i) i.focus(); }, 50);
+  },
+  eliminarCursoEjecutar: function(el){
+    var ae = el.dataset.ae || "";
+    var esperado = el.dataset.esperado || "";
+    var inp = $("#ecAnno");
+    if(!inp || inp.value.trim() !== esperado){ toast("Escribe "+esperado+" para confirmar la eliminación","warn"); return; }
+    var gs = gruposDeCurso(ae);
+    var res = eliminarGruposAhora(gs.map(function(g){ return g.key; }));
+    if(S.cursos) delete S.cursos[ae];
+    S.cola = S.cola.filter(function(op){ return !(op.t==="curso" && op.ae===ae); });
+    encolar({ t:"cursoDel", ae:ae, centro:(gs[0]? gs[0].meta.codigoCentro : centroCodigoActual()), ts:Date.now() });
+    if(S.cursoActivo===ae) S.cursoActivo = null;
+    _dlgCurso = null; cerrarDlg();
+    asegurarCursoActivo(); guardarEstado(); sincronizar(false); renderActual();
+    toast("Curso escolar "+ae+" eliminado con todo: "+res.grupos+" grupo"+(res.grupos===1?"":"s")+", "+res.alumnos+" alumno"+(res.alumnos===1?"":"s"),"ok");
+  },
+  /* ===== ELIMINAR GRUPOS MASIVAMENTE (v2.7): los marcados con casillas en un curso escolar ===== */
+  eliminarGruposMassivo: function(el){
+    if(!Auth.esAdmin()){ toast("Solo el administrador puede eliminar grupos","warn"); return; }
+    var ae = el.dataset.ae || "";
+    var marcados = $all('.gSelChk[data-ae="'+ae+'"]').filter(function(ch){ return ch.checked; })
+      .map(function(ch){ return S.datasets[ch.value]; }).filter(function(d){ return d && !d.meta.archivado; });
+    if(!marcados.length){ toast("Marca primero con las casillas los grupos que quieras eliminar","warn"); return; }
+    var na = marcados.reduce(function(n,g){ return n+g.alumnos.length; }, 0);
+    var h = dlgHead(icon("trash",20)+' ¿Eliminar '+marcados.length+' grupo'+(marcados.length===1?'':'s')+' del curso '+esc(ae)+'?', 'Los grupos marcados se borrarán del dispositivo y de la nube');
+    h += '<div class="dlg-body">';
+    h += marcados.map(function(g){
+      return '<label class="gs-row"><input type="checkbox" class="gmChk" value="'+esc(g.key)+'" checked disabled>' +
+        '<span class="gs-main"><b>Grupo '+esc(g.meta.unidadNombre)+'</b><span>'+esc(grupoDetalle(g))+' · '+g.alumnos.length+' alumno'+(g.alumnos.length===1?"":"s")+'</span></span></label>';
+    }).join("");
+    h += '<div class="peligro" style="margin-top:10px">'+icon("alert",16)+'<div>Se eliminarán <b>'+marcados.length+' grupo'+(marcados.length===1?'':'s')+'</b> con <b>'+na+' alumno'+(na===1?'':'s')+'</b> y todos sus niveles. Se borrarán de este dispositivo <b>y de la nube</b>. Esta acción no se puede deshacer. Los demás grupos y cursos escolares no se ven afectados.</div></div>' +
+      (na>0? '<label class="gs-row" style="border-color:#fcd34d"><input type="checkbox" id="gmAck"><span class="gs-main"><b>Confirmo eliminar los datos</b><span>Sé que se borrarán '+na+' alumno'+(na===1?'':'s')+' con sus niveles por descriptor y que no se pueden recuperar.</span></span></label>' : '') +
+      '</div>' +
+      '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
+      '<button class="btn btn-danger" data-action="eliminarGruposEjecutar" data-ae="'+esc(ae)+'">'+icon("trash",15)+' Eliminar '+marcados.length+' grupo'+(marcados.length===1?'':'s')+'</button></div>';
+    openDialog(h);
+  },
+  eliminarGruposEjecutar: function(el){
+    var ae = el.dataset.ae || "";
+    var keys = $all("#dlgRoot .gmChk").filter(function(c){ return c.checked; }).map(function(c){ return c.value; });
+    if(!keys.length){ toast("No hay grupos marcados","warn"); return; }
+    var na = keys.reduce(function(n,k){ var d=S.datasets[k]; return n + (d? d.alumnos.length : 0); }, 0);
+    if(na>0 && !($("#gmAck") && $("#gmAck").checked)){ toast("Confirma la casilla de eliminación de datos","warn"); return; }
+    cerrarDlg();
+    var res = eliminarGruposAhora(keys);
+    asegurarCursoActivo(); guardarEstado(); sincronizar(false); renderActual();
+    toast(res.grupos+" grupo"+(res.grupos===1?"":"s")+" eliminado"+(res.grupos===1?"":"s")+" del curso "+ae+" (dispositivo y nube)","ok");
+  },
+  /* Activa un curso escolar desde la sección Cursos escolares (v2.7) */
+  activarCurso: function(el){
+    ponerCursoActivo(el.dataset.ae, "inicio");
   },
   descargarDeNube: function(){
     if(!navigator.onLine){ toast("Sin conexión","warn"); return; }
@@ -3087,10 +3230,8 @@ var ACTIONS = {
     if(!Auth.esAdmin()){ toast("Solo el administrador puede eliminar de la nube","warn"); return; }
     var key = el.dataset.key;
     var centro = el.dataset.centro;
-    /* PROTECCIONES (v2.4): ni el curso vigente ni los archivados se pueden eliminar */
-    if(el.dataset.arch==="1"){ toast("Ese curso está ARCHIVADO y no puede eliminarse (desarchívalo primero).","warn"); return; }
-    var annoNube = parseInt(el.dataset.anno||"",10);
-    if(!isNaN(annoNube) && annoNube !== 0 && annoNube === annoInicioVigente()){ toast("El curso VIGENTE ("+annoNube+"/"+(annoNube+1)+") no se puede eliminar.","warn"); return; }
+    /* PROTECCIÓN (v2.7): solo lo bloquea estar ARCHIVADO */
+    if(el.dataset.arch==="1"){ toast("Ese grupo está ARCHIVADO y no puede eliminarse (desarchívalo primero).","warn"); return; }
     confirmar("¿Eliminar de la nube?","El grupo <b>"+esc(key)+"</b> se borrará de Firebase (los demás dispositivos lo perderán). Esta acción no se puede deshacer.","Eliminar",function(){
       nubeEliminar(centro, key).then(function(){
         delete S.nubeGuardados[key];
@@ -3248,6 +3389,11 @@ document.addEventListener("input", function(e){
       pv.innerHTML = /^\d{4}\/\d{4}$/.test(v) ? pillEstadoCurso({annoEscolar:v}) : '<span class="pill lvl-NA sm">FORMATO: 2026/2027</span>';
     }
   }
+  /* v2.7: confirmación escribiendo el año para eliminar un curso escolar completo */
+  if(e.target.id==="ecAnno"){
+    var ok = $("#ecOk");
+    if(ok) ok.disabled = (e.target.value||"").trim() !== (e.target.dataset.esperado||"");
+  }
   var el = e.target.closest("[data-input]");
   if(!el) return;
   if(el.dataset.input==="filtro"){
@@ -3260,6 +3406,16 @@ document.addEventListener("input", function(e){
 });
 document.addEventListener("change", function(e){
   var el = e.target;
+  /* v2.7: casillas de selección masiva de grupos en Cursos escolares */
+  if(el.classList && el.classList.contains("gSelAll")){
+    $all('.gSelChk[data-ae="'+el.dataset.ae+'"]').forEach(function(ch){ ch.checked = el.checked; });
+    refrescarConteoSel(el.dataset.ae);
+    return;
+  }
+  if(el.classList && el.classList.contains("gSelChk")){
+    refrescarConteoSel(el.dataset.ae);
+    return;
+  }
   /* v2.6: cambio de curso escolar desde el selector de Inicio */
   if(el.dataset && el.dataset.input==="selCurso"){
     ponerCursoActivo(el.value, S.view);
@@ -3392,14 +3548,14 @@ function dlgConfirmarImportacion(lista){
   lista.forEach(function(ds){
     var st = estadisticasGrupo(ds.alumnos);
     var nota = ' · curso nuevo '+pillEstadoCurso({annoEscolar: annoEscolarDe(ds.meta)});
-    if(ds._bloqueado) nota = ' · <b style="color:#dc2626">BLOQUEADO: el curso está ARCHIVADO (desarchívalo para poder actualizarlo)</b>';
-    else if(ds._actualiza) nota = ' · <b style="color:var(--warn)">actualizará este curso existente (mismo curso, sin tocar otros)</b>';
-    else if(ds._reaislado) nota = ' · <b style="color:var(--primary-strong)">ya había otro curso con esa referencia: se creará como curso nuevo aislado («'+esc(ds.key)+'»)</b>';
+    if(ds._bloqueado) nota = ' · <b style="color:#dc2626">BLOQUEADO: el grupo está ARCHIVADO (desarchívalo para poder actualizarlo)</b>';
+    else if(ds._actualiza) nota = ' · <b style="color:var(--warn)">actualizará este grupo existente (mismo grupo y curso, sin tocar otros)</b>';
+    else if(ds._reaislado) nota = ' · <b style="color:var(--primary-strong)">ya había otro grupo con esa referencia: se creará como grupo nuevo aislado («'+esc(ds.key)+'»)</b>';
     h += '<label class="preview-group"'+(ds._bloqueado?' style="opacity:.6"':"")+'><input type="checkbox" class="impChk" value="'+esc(ds.key)+'"'+(ds._bloqueado?' disabled':' checked')+'>' +
       '<div class="info"><b>'+esc(ds.meta.unidadNombre)+'</b>' +
       '<span>'+esc(grupoDetalle(ds))+' · '+ds.alumnos.length+' alumnos · media '+fmtNum(st.mediaGlobal)+nota+'</span></div></label>';
   });
-  h += '<div class="hint" style="margin-top:12px">Cada grupo se guarda como un <b>curso aislado</b> (sus datos no se mezclan con los de otros cursos), en este dispositivo y en la nube con <b>sincronización automática</b>. Si estás sin conexión, se enviará al reconectar. Los informes de <b>cursos anteriores</b> (p. ej. 2025/2026) se guardan en su propio curso, aunque ese año ya haya pasado.</div></div>';
+  h += '<div class="hint" style="margin-top:12px">Cada grupo se guarda dentro de <b>su curso escolar</b> como un <b>compartimento aislado</b> (sus datos no se mezclan con los de otros cursos), en este dispositivo y en la nube con <b>sincronización automática</b>. Si estás sin conexión, se enviará al reconectar. Los informes de <b>cursos anteriores</b> (p. ej. 2025/2026) se guardan en su propio curso, aunque ese año ya haya pasado.</div></div>';
   h += '<div class="dlg-foot"><button class="btn" data-action="cerrarDlg">Cancelar</button>' +
     '<button class="btn btn-primary" data-action="confirmarImport">'+icon("check")+' Importar seleccionados</button></div>';
   openDialog(h, true);
@@ -3419,7 +3575,7 @@ function confirmarImport(){
   S.activeKey = lista[0].key; S.alumnoIdx = 0;
   guardarEstado();
   cerrarDlg();
-  toast(lista.length+" curso"+(lista.length>1?"s":"")+" importado"+(lista.length>1?"s":"")+" como compartimento"+(lista.length>1?"s":"") + " aislado"+(lista.length>1?"s":"")+" · "+lista[0].meta.nombreCentro, "ok");
+  toast(lista.length+" grupo"+(lista.length>1?"s":"")+" importado"+(lista.length>1?"s":"")+" en su curso escolar, aislado"+(lista.length>1?"s":"")+" · "+lista[0].meta.nombreCentro, "ok");
   S.view = "resumen"; renderActual();
   /* Sincronización automática con la nube */
   sincronizarCambios(lista.map(function(ds){ return ds.key; }));
@@ -3709,7 +3865,7 @@ window.__app = {
     if(texto.indexOf("\uFFFD")>=0) texto = new TextDecoder("iso-8859-1").decode(buffer);
     return this.importarTextoXML(texto, "buffer.xml");
   },
-  version: "2.6"
+  version: "2.7"
 };
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();
