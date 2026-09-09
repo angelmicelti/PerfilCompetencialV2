@@ -1,16 +1,20 @@
-# Perfil Competencial LOMLOE · PWA (v2.6)
+# Perfil Competencial LOMLOE · PWA (v2.7)
 
 Aplicación web instalable (PWA) para evaluar y analizar el **perfil competencial del alumnado** a partir de los informes **NIVELES_COMPETENCIALES** exportados de **Séneca** (XML). Todo el diseño, la lógica y los estilos están incluidos **dentro de un único `index.html`** (el HTML contiene el CSS y el JavaScript).
 
 - 🔐 **Acceso con nombre de usuario y contraseña** — sin correo electrónico (dos perfiles: **usuario** y **administrador**)
-- 🗂️ **Aislamiento por curso en pantalla (v2.6)** — la app trabaja siempre **dentro de un solo curso escolar**: Inicio muestra únicamente SUS grupos, y el chip de la cabecera (curso · grupo) abre un cambiador en dos pasos (curso → grupo)
+- 🏫 **Sección «Cursos escolares» en el menú lateral (v2.7)** — toda la gestión de cursos reunida en su propia pantalla, con terminología clara: **curso escolar** = un año completo (p. ej. `2025/2026`); **grupo** = una unidad dentro del curso (p. ej. `1º A`)
+- 🗑️ **Eliminar curso escolar completo (v2.7)** — borra un curso escolar **con todos sus grupos, alumnos y niveles**, avisando del peligro y pidiendo **escribir el año de inicio** (p. ej. `2025`) como confirmación; los cursos **archivados** siguen protegidos (hay que desarchivarlos primero)
+- ☑️ **Eliminar grupos uno a uno o masivamente (v2.7)** — casillas de selección por curso escolar, «marcar todos», contador y confirmación expresa antes de borrar
+- 1️⃣ **Primer curso del centro: 2025/2026 (v2.7)** — si no hay ningún curso, la app lo propone por defecto y se sitúa en él automáticamente
+- 🗂️ **Aislamiento por curso en pantalla (v2.6)** — la app trabaja siempre **dentro de un solo curso escolar**: Inicio muestra únicamente SUS grupos, y el chip de la cabecera (curso escolar · grupo) abre un cambiador en dos pasos (curso → grupo)
 - 🏫 **Creación de cursos escolares sencilla (v2.6)** — «Nuevo curso escolar» pide **solo el año escolar**; el curso nace vacío y aislado y sus **grupos se crean solos al importar el XML** de Séneca o al transferir datos de un curso adyacente (ya no se pide ningún dato de grupo al crear el curso)
 - 🔁 **Cursos sucesivos: «Generar próximo año»** — con un clic se crean los cursos del año escolar siguiente (vacíos y aislados), copiando la estructura de los actuales; también se puede duplicar curso por curso
 - ⏪ **Cursos anteriores al presente** — el **año escolar** es un selector nativo con cualquier curso (p. ej. `2025/2026 — anterior`), con vista previa del estado (ANTERIOR / VIGENTE / FUTURO) y atajos «Curso anterior»
 - 📥 **¿Tienes datos de un curso anterior (p. ej. 2025/2026)?** — importa el XML directamente: el curso se crea solo con el año que trae el informe, aunque ya haya pasado (v2.5)
 - ↔️ **Transferencia de datos entre cursos adyacentes** (años escolares consecutivos), en modo *copiar* o *mover*, con confirmación de sobrescritura
 - 🗄️ **Archivar cursos** — un curso archivado queda protegido contra borrado y en modo lectura; se puede desarchivar cuando se quiera
-- 🛡️ **El curso vigente no se puede eliminar** — un curso va del 1 de septiembre al 31 de agosto del año siguiente; mientras esté en marcha, su borrado está bloqueado (en la app y también al borrar desde la nube)
+- 🛡️ **Borrados con protección (v2.7)** — el borrado de un curso escolar completo (o de grupos sueltos) exige confirmación expresa; el diálogo advierte del peligro, muestra cuántos grupos y alumnos se perderán y, si el curso es el **VIGENTE** (1 sep – 31 ago), añade un aviso extra en rojo. Los **archivados** no se pueden borrar sin desarchivarlos antes
 - 🗂️ **Datos aislados por curso**: cada curso vive en su propio compartimento en el dispositivo y en la nube; los datos de un curso **nunca** se mezclan con los de otro
 - ☁️ **Sincronización automática** con Firebase Realtime Database tras cualquier cambio, con cola offline
 - 📊 Matriz clicable alumno × competencia, análisis por competencia, ficha individual con navegación, estadísticas y **exportación a PDF**
@@ -56,7 +60,7 @@ En [Firebase Console](https://console.firebase.google.com/) → proyecto `iesvdv
 1. Crea un repositorio en GitHub (por ejemplo `perfil-competencial`), puede ser público o privado.
 2. Sube **todo el contenido de esta carpeta** a la rama principal (`main`): `index.html`, `manifest.json`, `sw.js`, la carpeta `icons/`, `database.rules.json`, `.nojekyll` y este `README.md`.
    - Desde la web: *Add file → Upload files* (arrarra también la carpeta de iconos).
-   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.6" && git push`.
+   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.7" && git push`.
 3. En el repositorio: **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** → Branch: **main** / **/(root)** → *Save*.
 4. Espera 1-2 minutos. Tu aplicación estará en:
    `https://TUUSUARIO.github.io/NOMBRE-DEL-REPO/`
@@ -79,6 +83,19 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 
 ## 5. Uso diario
 
+### Sección «Cursos escolares» del menú lateral (v2.7)
+
+Todo lo relacionado con cursos escolares está reunido en una sección propia del menú (visible para administradores):
+
+- **Terminología sin confusiones**: un **curso escolar** es un año completo (`2025/2026`); un **grupo** es una unidad de ese curso (`1º A`). La cabecera de cada sección dice «Curso escolar 2025/2026» y su tabla lista SUS grupos.
+- **Un bloque por curso escolar** (ordenados de más antiguo a más reciente) con su etiqueta de estado (ANTERIOR / VIGENTE / FUTURO), el número de grupos y alumnos, y el distintivo **EN PANTALLA** en el curso activo; con **«Trabajar aquí»** cambias de curso con un clic.
+- **Acciones por grupo** en cada fila: abrir, transferir a curso adyacente, generar para el año siguiente, copia JSON, archivar/desarchivar y **eliminar**.
+- **Eliminar grupos masivamente**: marca con las casillas (o «marcar todos»), pulsa **Eliminar seleccionados (N)**, revisa el resumen y **confirma expresamente** que quieres borrar los datos de los alumnos.
+- **Eliminar un curso escolar completo**: papelera de la cabecera del curso → diálogo rojo de **aviso de peligro** (cuántos grupos y alumnos se borrarán, dispositivo **y nube**, irreversible) → hay que **escribir el año de inicio** (p. ej. `2025`) para activar el botón. Si el curso está VIGENTE se avisa con otra caja roja; si tiene grupos **archivados**, el borrado está bloqueado hasta desarchivarlos.
+- **Primer curso del centro**: si aún no existe ningún curso, la app propone directamente crear **2025/2026** (el curso de los datos iniciales) y, tras borrar o al empezar de cero, se sitúa sola en él.
+
+> **Ojo**: eliminar un curso escolar borra TODOS sus grupos y alumnos de este dispositivo y de la nube (Firebase), y los demás dispositivos también lo perderán. No se puede deshacer. Si quieres conservar una copia, exporta antes los grupos (botón ⬇ de cada grupo).
+
 ### Aislamiento por curso en pantalla y creación de cursos (v2.6)
 
 **Un solo curso en pantalla.** La app ya no muestra todos los cursos a la vez. Ahora trabaja siempre dentro de un **curso escolar activo**:
@@ -93,7 +110,7 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 
 1. Elige el año y pulsa **Crear curso**: nace un curso **vacío y aislado**, sincronizado con la nube.
 2. Sus **grupos no se crean a mano**: aparecen al **importar su XML de Séneca** (cada unidad del informe) o al **transferir datos desde un curso adyacente**.
-3. Mientras el curso está vacío, Inicio muestra una pantalla que lo indica con el botón de importación. En *Administración* los cursos vacíos se ven en su fila de año con botón **Eliminar** (nunca el vigente).
+3. Mientras el curso está vacío, Inicio muestra una pantalla que lo indica con el botón de importación. En *Cursos escolares* los cursos vacíos se ven en su bloque con su papelera (elimina el curso completo con confirmación escribiendo el año).
 
 **Cómo se garantiza el aislamiento entre cursos:**
 
@@ -145,7 +162,7 @@ Los cursos anteriores aparecen con la etiqueta **ANTERIOR**; si quieres blindarl
 - Se muestra con estilo atenuado y la etiqueta ARCHIVADO · solo lectura en todas las pantallas, incluido un aviso al abrirlo.
 - Se puede **desarchivar** en cualquier momento con el mismo botón.
 
-**El curso vigente no se puede borrar.** La app calcula el curso escolar en marcha con la fecha real (un curso va del **1 de septiembre de un año al 31 de agosto del siguiente**). Ese curso aparece con la etiqueta **VIGENTE** y cualquier intento de eliminarlo está bloqueado, con aviso explicativo — también al intentar borrarlo desde el diálogo de la nube. Si quieres conservar intacto un curso terminado, archívalo: la combinación *vigente protegido + archivado protegido* evita borrados accidentales del historial.
+**El curso vigente se borra solo con confirmación expresa (v2.7).** La app calcula el curso escolar en marcha con la fecha real (un curso va del **1 de septiembre de un año al 31 de agosto del siguiente**) y lo marca **VIGENTE**. Desde la v2.7 cualquier curso escolar puede eliminarse (papelera del bloque en *Cursos escolares*), pero siempre pasando por el aviso de peligro y escribiendo su año de inicio; si el curso es el vigente, se muestra además una advertencia roja adicional. Para blindar un curso contra borrados, **archívalo**: los archivados no se pueden eliminar (ni sus grupos) hasta desarchivarlos.
 
 **Qué se copia y qué no:** la estructura (grupo, enseñanza, evaluación y convocatoria) sí; **los alumnos y sus resultados NO** — entran después importando el XML de Séneca del nuevo año **dentro de cada curso nuevo**. Los cursos de años anteriores quedan **intactos** como historial consultable, y cada curso nuevo se registra en su propio nodo de la nube (con su año en la clave), de modo que los datos de un año y de otro nunca se mezclan. Si en el año destino ya existiera un curso con la misma estructura, la app lo detecta, lo marca **YA EXISTE** y no crea duplicados.
 
@@ -153,7 +170,7 @@ Los cursos anteriores aparecen con la etiqueta **ANTERIOR**; si quieres blindarl
 - **Importar XML**: pestaña *Inicio → Importar XML* (o arrastrando el archivo). Cada unidad del XML se convierte en un curso. Todo se sube solo a la nube.
 - **Crear cursos escolares**: *Inicio → Nuevo curso escolar* (vacío, con año escolar y evaluación a elegir).
 - **Generar los cursos del año siguiente**: *Inicio → Generar próximo año* (crea de golpe, vacíos y aislados, los cursos sucesivos del nuevo año escolar).
-- **Añadir/eliminar cursos**: *Administración → Cursos escolares* (crear, generar próximo año, importar, abrir, transferir a curso adyacente, duplicar para el año siguiente, archivar/desarchivar, copia JSON, eliminar en dispositivo y nube — con protección del curso vigente y de los archivados).
+- **Añadir/eliminar cursos y grupos**: sección **«Cursos escolares»** del menú lateral (crear, generar próximo año, importar, abrir, transferir a curso adyacente, duplicar para el año siguiente, archivar/desarchivar, copia JSON, eliminar grupos **uno a uno o masivamente** y eliminar cursos escolares completos — con aviso de peligro y confirmación escribiendo el año; los archivados protegidos).
 - **Crear usuarios**: *Administración → Usuarios → Añadir usuario nuevo*: nombre, **nombre de usuario**, contraseña inicial y perfil (`usuario` o `administrador`). Comunica a cada persona su usuario y contraseña.
 - **Restablecer una contraseña** 🔑: botón de la llave en la fila del usuario (no se envía ningún correo).
 - **Desactivar / reactivar el acceso**: botón ✕ / ✓ (el perfil y sus datos se conservan).
