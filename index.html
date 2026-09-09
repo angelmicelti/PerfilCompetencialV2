@@ -183,18 +183,38 @@ tr.year-row .btn{margin-left:10px; padding:3px 9px; font-size:11.5px}
 [data-theme="dark"] .pill.est-arc{background:#d97706}
 /* v2.7: sección Cursos escolares y avisos de peligro */
 .cur-sec{margin-bottom:14px}
-.cur-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:10px}
-.cur-head h3{font-size:15.5px; margin:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-.cur-anio{font-weight:800}
 .chk-cell{width:34px; text-align:center}
 .chk-cell input{width:15px; height:15px; accent-color:var(--primary); cursor:pointer}
 .table-scroll{overflow-x:auto; margin:0 -2px; padding:0 2px}
-@media (max-width:560px){ .cur-sec .col-opt{display:none} }
+/* v2.8: en móvil se ocultan las columnas opcionales de las tablas dentro de los acordeones */
+@media (max-width:560px){ .col-opt{display:none} }
 .peligro{background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:12px; padding:10px 12px; font-size:12.5px; margin:10px 0; display:flex; gap:8px; align-items:flex-start; line-height:1.45}
 .peligro svg{flex:none; margin-top:1px}
 [data-theme="dark"] .peligro{background:rgba(220,38,38,.14); border-color:rgba(248,113,113,.35); color:#fca5a5}
-.curso-card.archivado{border-style:dashed; opacity:.85}
-.curso-card.archivado:hover{transform:none; box-shadow:0 4px 8px rgba(15,23,42,.06),0 18px 36px -16px rgba(15,23,42,.28)}
+/* v2.8: secciones tipo acordeón — inicialmente plegadas, solo una abierta por pantalla */
+.acc{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.acc + .acc{margin-top:12px}
+.acc.archivado{border-style:dashed; opacity:.85}
+.acc-head{display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; cursor:pointer; text-align:left; transition:background .15s}
+.acc-head:hover{background:var(--card-2)}
+.acc-head:focus-visible{outline:2px solid var(--primary); outline-offset:-2px}
+.acc-title{flex:1; min-width:0}
+.acc-title h3{font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.acc-title h4{font-size:13.5px}
+.acc-title .sub{font-size:12px; color:var(--muted); margin-top:1px}
+.acc-meta{margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; color:var(--muted); font-size:12.5px; font-weight:600}
+.acc-chev{flex:none; color:var(--muted); transition:transform .22s}
+.acc.open .acc-chev{transform:rotate(180deg)}
+.acc-body{border-top:1px solid var(--border); padding:14px 16px 16px; display:none}
+.acc.open > .acc-body{display:block}
+.acc-body.flush{padding:0}
+.acc-head .comp-head{flex:1; min-width:0; padding:0; border-bottom:0}
+.acc-head .flag{position:static}
+.acc-body .kpi-grid{margin-bottom:0}
+.acc-body .desc{color:var(--muted); font-size:12.5px; margin-bottom:12px}
+.grupo-meta{color:var(--muted); font-size:12.5px; display:flex; flex-direction:column; gap:4px; margin-bottom:12px}
+.grupo-meta span{display:flex; align-items:center; gap:6px}
+.acc-body .actions{display:flex; gap:6px; flex-wrap:wrap}
 .top-actions{margin-left:auto; display:flex; align-items:center; gap:6px}
 #syncChip{
   display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
@@ -651,7 +671,7 @@ pre.rules{
     <p class="login-sub">Conectando con Firebase</p>
   </div>
 
-  <p class="login-copy">v2.7 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
+  <p class="login-copy">v2.8 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
 </div>
 
 <!-- ============ APLICACIÓN ============ -->
@@ -666,7 +686,7 @@ pre.rules{
       <button class="cloudpill" id="cloudPill" data-action="abrirNube" title="Estado de la nube">
         <span class="dot"></span><span id="cloudPillTxt">Comprobando nube…</span>
       </button>
-      <div class="ver">v2.7 · PWA · GitHub Pages</div>
+      <div class="ver">v2.8 · PWA · GitHub Pages</div>
     </div>
   </aside>
   <div id="scrim" data-action="cerrarNav"></div>
@@ -781,7 +801,8 @@ var ICO = {
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   wifi_off:'<path d="M2 2l20 20"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M18.6 13.4a10 10 0 0 0-2.1-1.3M2 8.8A15 15 0 0 1 7.5 6M21.5 12a15 15 0 0 0-3.6-2.5"/><path d="M12 20h.01"/>',
   transfer:'<path d="m8 3-4 4 4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
-  arch:'<rect x="3" y="3" width="18" height="5" rx="1.2"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>'
+  arch:'<rect x="3" y="3" width="18" height="5" rx="1.2"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+  down:'<path d="m6 9 6 6 6-6"/>'
 };
 function icon(name, size){
   size = size || 18;
@@ -1935,6 +1956,32 @@ function ir(view){
   renderActual();
 }
 
+/* ============ ACORDEONES (v2.8) ============
+   Todas las secciones de cada pantalla son acordeones desplegables:
+   inicialmente plegadas y con UNA SOLA abierta a la vez en cada pantalla.
+   El estado se guarda por pantalla solo durante la sesión (al recargar la
+   aplicación, todas las secciones vuelven a estar plegadas). */
+var ACC_ABIERTA = {};
+function accAbierta(view){ return ACC_ABIERTA[view] || null; }
+/** Construye una sección-acordeón: cabecera clicable + cuerpo plegable.
+    view: pantalla a la que pertenece · key: identificador de la sección
+    cabecera: HTML interno de la cabecera (sin el chevron)
+    opts.flush: cuerpo sin padding (tablas y filas a sangre completa)
+    opts.cls: clase extra para el contenedor (p. ej. "archivado") */
+function accSec(view, key, cabecera, cuerpo, opts){
+  opts = opts || {};
+  var abierta = accAbierta(view) === key;
+  return '<section class="acc'+(opts.cls? " "+opts.cls:"")+(abierta? " open":"")+'">' +
+    '<div class="acc-head" role="button" tabindex="0" aria-expanded="'+(abierta?"true":"false")+'"' +
+    ' aria-controls="accb-'+esc(view)+"-"+esc(key)+'" data-action="toggleAcc" data-view="'+esc(view)+'" data-acc="'+esc(key)+'"' +
+    ' title="Pulsa para '+(abierta?"plegar":"desplegar")+' esta sección">' +
+      cabecera +
+      '<span class="acc-chev" aria-hidden="true">'+icon("down",18)+'</span>' +
+    '</div>' +
+    '<div class="acc-body'+(opts.flush? " flush":"")+'" id="accb-'+esc(view)+"-"+esc(key)+'">'+cuerpo+'</div>' +
+  '</section>';
+}
+
 /* ============ VISTA: INICIO ============ */
 function sinDatos(titulo, texto){
   var admin = Auth.esAdmin();
@@ -2001,7 +2048,7 @@ function renderInicio(){
       '</div></div>';
     return h;
   }
-  h += '<div class="grid-cursos">' + gs.map(cardCurso).join('') + '</div>';
+  h += gs.map(cardCurso).join("");
   if(admin){
     h += '<div class="dropzone" id="dz" data-action="importarClick" style="margin-top:18px">' +
       '<div class="dz-ico">'+icon("upload",24)+'</div><b>Importar más informes en '+esc(ae)+'</b>' +
@@ -2009,18 +2056,19 @@ function renderInicio(){
   }
   return h;
 }
-/** Tarjeta de un grupo dentro del curso activo */
+/** Sección-acordeón de un grupo dentro del curso activo (v2.8) */
 function cardCurso(ds){
   var enNube = !!S.nubeGuardados[ds.key];
   var st = estadisticasGrupo(ds.alumnos);
   var arch = !!ds.meta.archivado;
-  return '<div class="card curso-card'+(arch?" archivado":"")+'">' +
-    (enNube ? '<span class="flag">EN LA NUBE</span>' : "") +
-    '<div><h3>'+esc(ds.meta.unidadNombre)+' '+pillEstadoCurso(ds.meta)+'</h3><div style="font-size:12px;color:var(--muted)">'+esc(ds.meta.cursoGeneral)+(arch?' · <b>archivado: solo lectura</b>':"")+'</div></div>' +
-    '<div class="meta">' +
+  var cab = '<div class="acc-title"><h3>'+esc(ds.meta.unidadNombre)+' '+pillEstadoCurso(ds.meta)+(enNube? ' <span class="flag">EN LA NUBE</span>':"")+'</h3>' +
+    '<div class="sub">'+esc(ds.meta.cursoGeneral)+(arch?' · <b>archivado: solo lectura</b>':"")+'</div></div>' +
+    '<div class="acc-meta">'+icon("users",14)+' '+ds.alumnos.length+' alumno'+(ds.alumnos.length===1?'':'s')+'</div>';
+  var cuerpo = '<div class="grupo-meta">' +
       '<span>'+icon("cal",14)+' Curso escolar '+esc(annoEscolarDe(ds.meta))+' · Período '+esc(ds.meta.periodo)+(ds.meta.convocatoria? ' · '+esc(ds.meta.convocatoria):"")+'</span>' +
       '<span>'+icon("users",14)+' '+ds.alumnos.length+' alumnos · '+st.totalDescriptores+' descriptores</span>' +
       '<span>'+icon("refresh",14)+' Importado '+haceTiempo(ds.meta.fechaCarga)+'</span>' +
+      '<span>'+icon("cloud",14)+' '+(enNube? 'Guardado en la nube':'Solo en este dispositivo')+'</span>' +
     '</div>' +
     '<div class="actions">' +
       '<button class="btn btn-primary btn-sm" data-action="abrirGrupo" data-key="'+esc(ds.key)+'">'+icon("grid",14)+' Abrir</button>' +
@@ -2029,7 +2077,8 @@ function cardCurso(ds){
               '<button class="btn btn-sm btn-icon" data-action="exportCurso" data-key="'+esc(ds.key)+'" title="Descargar copia (JSON) de este grupo">'+icon("download",15)+'</button>' +
               '<button class="btn btn-sm btn-icon" data-action="'+(arch?"desarchivarCurso":"archivarCurso")+'" data-key="'+esc(ds.key)+'" title="'+(arch?"Desarchivar: vuelve a estar activo y editable":"Archivar: lo protege contra borrado (solo lectura)")+'">'+icon("arch",15)+'</button>' +
               '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(arch?"El grupo está archivado: desarchívalo para poder eliminarlo":"Eliminar este grupo (dispositivo y nube)")+'">'+icon("trash",15)+'</button>' : "") +
-    '</div></div>';
+    '</div>';
+  return accSec("inicio", ds.key, cab, cuerpo, {cls: arch? "archivado":""});
 }
 function centroActualNombre(){
   var ds = grupoActivo() || gruposLocales()[0];
@@ -2049,11 +2098,11 @@ function renderResumen(){
   h += '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Matriz de competencias</h2>' +
        '<div class="sub">'+esc(grupoDetalle(ds))+' · '+ds.alumnos.length+' alumnos</div></div>' +
        '<div class="head-actions"><button class="btn" data-action="imprimirResumen">'+icon("print")+' Exportar PDF</button></div></div>';
-  h += '<div class="toolbar-row">' +
+  /* Sección-acordeón: Matriz de competencias (buscador + tabla) */
+  var cuerpo = '<div class="toolbar-row">' +
     '<div class="search">'+icon("search",16)+'<input class="inp" id="filtroRes" placeholder="Buscar alumno…" value="'+esc(S.filtroResumen)+'" data-input="filtro"></div>' +
-    '<span class="count">'+alumnos.length+' de '+ds.alumnos.length+' alumnos</span>' +
-    '<span style="margin-left:auto" class="count">Media del grupo: '+fmtNum(st.mediaGlobal)+' / 5</span></div>';
-  h += '<div class="table-wrap"><table class="mx"><thead><tr>' +
+    '<span class="count">'+alumnos.length+' de '+ds.alumnos.length+' alumnos</span></div>';
+  cuerpo += '<div class="table-wrap"><table class="mx"><thead><tr>' +
     '<th class="th-alu">Alumno/a</th>' +
     COMPETENCIAS.map(function(c){
       return '<th title="'+esc(c.nombre)+'"><span class="compdot" style="background:'+c.color+'"></span>'+c.code+'</th>';
@@ -2063,24 +2112,30 @@ function renderResumen(){
     var idx = ds.alumnos.indexOf(a);
     var pr = promediosAlumno(a);
     var mg = mediaGlobalAlumno(a);
-    h += '<tr><td class="c-alu" data-action="abrirFicha" data-idx="'+idx+'" title="Ver ficha de '+esc(nombreAlumno(a))+'">'+esc(nombreAlumno(a))+'</td>';
+    cuerpo += '<tr><td class="c-alu" data-action="abrirFicha" data-idx="'+idx+'" title="Ver ficha de '+esc(nombreAlumno(a))+'">'+esc(nombreAlumno(a))+'</td>';
     COMPETENCIAS.forEach(function(c){
       var p = pr[c.code];
-      h += '<td class="c-cell"><button class="cellbtn" data-action="cellDetalle" data-idx="'+idx+'" data-comp="'+c.code+'" title="'+c.code+' · '+fmtNum(p.media)+'"'+(p.media==null?' style="opacity:.45"':"")+'>'+pillNivel(p.code)+'</button></td>';
+      cuerpo += '<td class="c-cell"><button class="cellbtn" data-action="cellDetalle" data-idx="'+idx+'" data-comp="'+c.code+'" title="'+c.code+' · '+fmtNum(p.media)+'"'+(p.media==null?' style="opacity:.45"':"")+'>'+pillNivel(p.code)+'</button></td>';
     });
-    h += '<td class="c-cell">'+pillNivel(mg.code)+'<div class="media-num">'+fmtNum(mg.media)+'</div></td></tr>';
+    cuerpo += '<td class="c-cell">'+pillNivel(mg.code)+'<div class="media-num">'+fmtNum(mg.media)+'</div></td></tr>';
   });
-  if(alumnos.length===0) h += '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">Ningún alumno coincide con la búsqueda.</td></tr>';
-  h += '</tbody><tfoot><tr><td class="tf-alu">Media del grupo</td>';
+  if(alumnos.length===0) cuerpo += '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">Ningún alumno coincide con la búsqueda.</td></tr>';
+  cuerpo += '</tbody><tfoot><tr><td class="tf-alu">Media del grupo</td>';
   COMPETENCIAS.forEach(function(c){
     var m = st.medias[c.code];
     var nv = m==null? null : nivelPorEscala(m);
-    h += '<td>'+(nv?pillNivel(nv.code,"sm"):'<span class="media-num">—</span>')+'<div class="media-num">'+fmtNum(m)+'</div></td>';
+    cuerpo += '<td>'+(nv?pillNivel(nv.code,"sm"):'<span class="media-num">—</span>')+'<div class="media-num">'+fmtNum(m)+'</div></td>';
   });
-  h += '<td><div class="media-num" style="font-weight:800">'+fmtNum(st.mediaGlobal)+'</div></td></tr></tfoot></table></div>';
-  h += '<div class="legend"><b style="font-size:11px;letter-spacing:.4px">NIVELES:</b>' +
-    NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") +
-    '<span class="it" style="margin-left:auto">'+icon("info",13)+' Pulsa una celda para ver sus descriptores; pulsa el nombre para abrir la ficha.</span></div>';
+  cuerpo += '<td><div class="media-num" style="font-weight:800">'+fmtNum(st.mediaGlobal)+'</div></td></tr></tfoot></table></div>';
+  h += accSec("resumen","matriz",
+    '<div class="acc-title"><h3>Matriz de competencias</h3><div class="sub">Pulsa una celda para ver sus descriptores; pulsa el nombre del alumno para abrir su ficha.</div></div>' +
+    '<div class="acc-meta">Media del grupo: '+fmtNum(st.mediaGlobal)+' / 5</div>',
+    cuerpo);
+  /* Sección-acordeón: Leyenda de niveles */
+  h += accSec("resumen","leyenda",
+    '<div class="acc-title"><h3>Leyenda de niveles</h3><div class="sub">Significado de los niveles IN, SU, BI, NT y SB.</div></div>',
+    '<div class="legend" style="margin-top:0"><b style="font-size:11px;letter-spacing:.4px">NIVELES:</b>' +
+    NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") + '</div>');
   return h;
 }
 
@@ -2090,24 +2145,25 @@ function renderCompetencias(){
   if(!ds) return sinGrupoActivo();
   var st = estadisticasGrupo(ds.alumnos);
   var h = avisoCursoArchivado() + '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Análisis por competencia</h2>' +
-    '<div class="sub">Pulsa un descriptor para ver qué alumnado tiene cada nivel</div></div></div><div class="comp-list">';
+    '<div class="sub">Despliega una competencia y pulsa un descriptor para ver qué alumnado tiene cada nivel</div></div></div>';
+  /* Un acordeón por competencia (v2.8) */
   COMPETENCIAS.forEach(function(c){
     var nums = descriptoresDeCompetencia(ds.alumnos, c.code);
     var media = st.medias[c.code];
     var nv = media==null? null : nivelPorEscala(media);
     var pctAltos = st.porcentajeAltos[c.code];
-    h += '<div class="card comp-card"><div class="comp-head">' +
+    var cab = '<div class="comp-head">' +
       '<div class="comp-ico" style="background:'+c.color+';font-size:'+(c.code.length>3?"10px":"11.5px")+'">'+c.code+'</div>' +
-      '<div><h3>'+esc(c.nombre)+'</h3><div class="sub">'+nums.length+' descriptores evaluados</div></div>' +
+      '<div class="acc-title"><h3>'+esc(c.nombre)+'</h3><div class="sub">'+nums.length+' descriptores evaluados</div></div>' +
       '<div class="right">'+(nv?pillNivel(nv.code,"big"):"")+'<div style="text-align:center"><b style="font-size:15px">'+fmtNum(media)+'</b><div class="media-num">media /5</div></div>' +
       '<div style="text-align:center"><b style="font-size:15px">'+(pctAltos==null?"—":Math.round(pctAltos)+"%")+'</b><div class="media-num">NT o SB</div></div></div></div>';
-    h += '<div>';
+    var cuerpo = '';
     nums.forEach(function(num){
       var code = c.code + num;
       var conteo = {IN:0,SU:0,BI:0,NT:0,SB:0};
       ds.alumnos.forEach(function(a){ var v=a.descriptores[code]; if(v){ var n=NIVELES_MAP[v]; if(n&&n.cualitativo) conteo[n.code]++; } });
       var total = conteo.IN+conteo.SU+conteo.BI+conteo.NT+conteo.SB;
-      h += '<button class="desc-row" data-action="descDetalle" data-comp="'+c.code+'" data-num="'+num+'">' +
+      cuerpo += '<button class="desc-row" data-action="descDetalle" data-comp="'+c.code+'" data-num="'+num+'">' +
         '<span class="desc-code" style="color:'+c.color+'">'+code+'</span>' +
         '<div class="distbar">' + NIVELES_CUAL.map(function(n){
             var pct = total? conteo[n.code]/total*100 : 0;
@@ -2118,10 +2174,9 @@ function renderCompetencias(){
           }).join("") + '</div>' +
         '</button>';
     });
-    if(nums.length===0) h += '<div style="padding:14px 16px; color:var(--muted); font-size:12.5px">Sin descriptores de esta competencia.</div>';
-    h += '</div></div>';
+    if(nums.length===0) cuerpo += '<div style="padding:14px 16px; color:var(--muted); font-size:12.5px">Sin descriptores de esta competencia.</div>';
+    h += accSec("competencias", c.code, cab, cuerpo, {flush:true});
   });
-  h += '</div>';
   return h;
 }
 
@@ -2248,23 +2303,28 @@ function renderAlumno(){
       '<div class="alu-kpi"><b style="color:'+(mejor?COMP_MAP[mejor].color:"inherit")+'">'+(mejor||"—")+'</b><span>Más fuerte</span></div>' +
       '<div class="alu-kpi"><b style="color:'+(baja?COMP_MAP[baja].color:"inherit")+'">'+(baja||"—")+'</b><span>Reforzar</span></div>' +
     '</div></div>';
-  h += '<div class="card"><div class="card-title">'+icon("chart",16)+' Perfil competencial</div><div class="canvas-box"><canvas id="radarAlumno" width="320" height="320" style="width:min(320px,100%)"></canvas></div></div>';
+  /* Sección-acordeón: Perfil competencial (radar), en la columna izquierda bajo la ficha */
+  h += accSec("alumno","radar",
+    '<div class="acc-title"><h3>'+icon("chart",16)+' Perfil competencial</h3><div class="sub">Gráfico radar con la media de las 8 competencias.</div></div>',
+    '<div class="canvas-box"><canvas id="radarAlumno" width="320" height="320" style="width:min(320px,100%)"></canvas></div>', {flush:true});
   h += '</div>';
   h += '<div class="alu-comps">';
+  /* Un acordeón por competencia (v2.8) */
   COMPETENCIAS.forEach(function(c){
     var p = pr[c.code];
-    h += '<div class="card alu-comp"><div class="row1">' +
-      '<span class="comp-ico" style="width:30px;height:30px;font-size:'+(c.code.length>3?"7.5px":"9.5px")+';letter-spacing:0;border-radius:9px;background:'+c.color+'">'+c.code+'</span>' +
-      '<h4>'+esc(c.nombre)+'</h4><div class="right"><span class="media-num">'+fmtNum(p.media)+' /5</span>'+pillNivel(p.code)+'</div></div>' +
-      '<div class="alu-descs">';
     var nums = descriptoresDeCompetencia(ds.alumnos, c.code);
+    var chips = '';
     nums.forEach(function(num){
       var code = c.code+num;
       var nivelId = a.descriptores[code];
       var niv = nivelId ? NIVELES_MAP[nivelId] : null;
-      h += '<span class="dchip"><span style="color:'+c.color+'">'+code+'</span>'+(niv?pillNivel(niv.code,"sm"):'<span class="pill sm lvl-NA">—</span>')+'</span>';
+      chips += '<span class="dchip"><span style="color:'+c.color+'">'+code+'</span>'+(niv?pillNivel(niv.code,"sm"):'<span class="pill sm lvl-NA">—</span>')+'</span>';
     });
-    h += '</div></div>';
+    h += accSec("alumno", c.code,
+      '<span class="comp-ico" style="width:30px;height:30px;font-size:'+(c.code.length>3?"7.5px":"9.5px")+';letter-spacing:0;border-radius:9px;background:'+c.color+'">'+c.code+'</span>' +
+      '<div class="acc-title"><h4>'+esc(c.nombre)+'</h4><div class="sub">'+nums.length+' descriptores</div></div>' +
+      '<div class="acc-meta"><span class="media-num">'+fmtNum(p.media)+' /5</span>'+pillNivel(p.code)+'</div>',
+      '<div class="alu-descs" style="padding-top:2px">'+(chips || '<span style="color:var(--muted); font-size:12.5px">Sin descriptores de esta competencia.</span>')+'</div>');
   });
   h += '</div></div>';
   return h;
@@ -2279,23 +2339,29 @@ function renderStats(){
   h += '<div class="pagehead"><div><h2>'+esc(ds.meta.unidadNombre)+' · Estadísticas de grupo</h2>' +
        '<div class="sub">'+st.totalAlumnos+' alumnos · '+st.totalDescriptores+' descriptores evaluados · Media global '+fmtNum(st.mediaGlobal)+' / 5</div></div>' +
        '<div class="head-actions"><button class="btn" data-action="imprimirStats">'+icon("print")+' Exportar PDF</button></div></div>';
-  h += '<div class="kpi-grid">' +
+  /* Secciones-acordeón (v2.8): indicadores, radar, medias, distribución y tabla */
+  h += accSec("stats","kpis",
+    '<div class="acc-title"><h3>Indicadores clave</h3><div class="sub">Alumnado, media global y competencias más fuerte y más débil.</div></div>',
+    '<div class="kpi-grid">' +
     '<div class="card kpi"><div class="lab">'+icon("users",13)+' Alumnos</div><div class="val">'+st.totalAlumnos+'</div></div>' +
     '<div class="card kpi"><div class="lab">'+icon("chart",13)+' Media global</div><div class="val">'+fmtNum(st.mediaGlobal)+' <small>/ 5</small></div></div>' +
     '<div class="card kpi"><div class="lab">'+icon("check",13)+' Más fuerte</div><div class="val" style="color:'+(st.competenciaMasAlta?COMP_MAP[st.competenciaMasAlta].color:"inherit")+'">'+(st.competenciaMasAlta||"—")+' <small>'+(st.competenciaMasAlta?esc(COMP_MAP[st.competenciaMasAlta].corto):"")+'</small></div></div>' +
     '<div class="card kpi"><div class="lab">'+icon("alert",13)+' A reforzar</div><div class="val" style="color:'+(st.competenciaMasBaja?COMP_MAP[st.competenciaMasBaja].color:"inherit")+'">'+(st.competenciaMasBaja||"—")+' <small>'+(st.competenciaMasBaja?esc(COMP_MAP[st.competenciaMasBaja].corto):"")+'</small></div></div>' +
-    '</div>';
-  h += '<div class="stats-grid">';
-  h += '<div style="display:flex; flex-direction:column; gap:14px">' +
-    '<div class="card"><div class="card-title">'+icon("chart",16)+' Radar del grupo</div><div class="canvas-box"><canvas id="radarGrupo" width="330" height="330" style="width:min(330px,100%)"></canvas></div></div>' +
-    '<div class="card"><div class="card-title">'+icon("chart",16)+' Media por competencia</div><div class="medias-rows">' +
+    '</div>');
+  h += accSec("stats","radar",
+    '<div class="acc-title"><h3>'+icon("chart",16)+' Radar del grupo</h3><div class="sub">Perfil medio del grupo en las 8 competencias.</div></div>',
+    '<div class="canvas-box"><canvas id="radarGrupo" width="330" height="330" style="width:min(330px,100%)"></canvas></div>', {flush:true});
+  h += accSec("stats","medias",
+    '<div class="acc-title"><h3>'+icon("chart",16)+' Media por competencia</h3><div class="sub">Barra por competencia con su nota media sobre 5.</div></div>',
+    '<div class="medias-rows">' +
     COMPETENCIAS.map(function(c){
       var m = st.medias[c.code]||0;
       return '<div class="media-row"><span class="name"><span class="compdot" style="width:9px;height:9px;border-radius:3px;background:'+c.color+';display:inline-block"></span>'+c.code+'</span>' +
         '<div class="bar"><i style="width:'+(m/5*100).toFixed(1)+'%;background:'+c.color+'"></i></div><span class="num">'+fmtNum(st.medias[c.code])+'</span></div>';
-    }).join("") + '</div></div></div>';
-  h += '<div style="display:flex; flex-direction:column; gap:14px">' +
-    '<div class="card"><div class="card-title">'+icon("grid",16)+' Distribución de niveles <span style="font-weight:400;color:var(--muted);font-size:12px">(nº de alumnos por nivel)</span></div><div class="medias-rows">' +
+    }).join("") + '</div>', {flush:true});
+  h += accSec("stats","dist",
+    '<div class="acc-title"><h3>'+icon("grid",16)+' Distribución de niveles</h3><div class="sub">Nº de alumnos por nivel (IN, SU, BI, NT, SB) en cada competencia.</div></div>',
+    '<div class="medias-rows">' +
     COMPETENCIAS.map(function(c){
       var d = st.distribucion[c.code];
       var total = st.totalAlumnos || 1;
@@ -2305,16 +2371,17 @@ function renderStats(){
         }).join("") + '</div>' +
         '<div class="desc-counts">' + NIVELES_CUAL.map(function(n){ return '<span class="pill sm lvl-'+n.code+'">'+d[n.code]+'</span>'; }).join("") + '</div></div>';
     }).join("") +
-    '<div class="legend" style="margin-top:4px">' + NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") + '</div></div></div>' +
-    '<div class="card" style="overflow:auto"><div class="card-title">'+icon("layers",16)+' Resumen cuantitativo</div><div style="padding:10px 6px 6px"><table class="stats-t">' +
+    '<div class="legend" style="margin-top:4px">' + NIVELES_CUAL.map(function(n){ return '<span class="it">'+pillNivel(n.code,"sm")+' '+n.nombre+'</span>'; }).join("") + '</div></div>', {flush:true});
+  h += accSec("stats","tabla",
+    '<div class="acc-title"><h3>'+icon("layers",16)+' Resumen cuantitativo</h3><div class="sub">Media, nivel y porcentaje de NT o SB por competencia.</div></div>',
+    '<div style="padding:12px 16px 14px; overflow:auto"><table class="stats-t">' +
     '<thead><tr><th>Competencia</th><th>Media /5</th><th>Nivel</th><th>% NT o SB</th></tr></thead><tbody>' +
     COMPETENCIAS.map(function(c){
       var m = st.medias[c.code];
       var nv = m==null? null : nivelPorEscala(m);
       return '<tr><td style="color:'+c.color+'">'+c.code+' <span style="color:var(--muted);font-weight:400">'+esc(c.corto)+'</span></td>' +
         '<td>'+fmtNum(m)+'</td><td>'+(nv?pillNivel(nv.code,"sm"):"—")+'</td><td>'+(st.porcentajeAltos[c.code]==null?"—":Math.round(st.porcentajeAltos[c.code])+"%")+'</td></tr>';
-    }).join("") + '</tbody></table></div></div></div>';
-  h += '</div>';
+    }).join("") + '</tbody></table></div>', {flush:true});
   return h;
 }
 
@@ -2344,30 +2411,29 @@ function renderCursos(){
   h += cursos.map(seccionCurso).join("");
   return h;
 }
-/** Sección de gestión de UN curso escolar: sus grupos, acciones por grupo y acciones del curso completo */
+/** Sección-acordeón de UN curso escolar: sus grupos, acciones por grupo y acciones del curso completo (v2.8) */
 function seccionCurso(ae){
   var gs = gruposDeCurso(ae);
   var na = gs.reduce(function(n,g){ return n+g.alumnos.length; }, 0);
   var enPantalla = ae === S.cursoActivo;
-  var h = '<div class="card card-pad adm-sec cur-sec">';
-  h += '<div class="cur-head">' +
-    '<div><h3>'+icon("cal",17)+' Curso escolar <span class="cur-anio">'+esc(ae)+'</span> '+pillEstadoCurso({annoEscolar:ae})+(enPantalla? ' <span class="pill est-vig sm">EN PANTALLA</span>':'')+'</h3>' +
-    '<div class="desc" style="margin:4px 0 0">'+(gs.length? gs.length+' grupo'+(gs.length===1?'':'s')+': '+gs.map(function(g){ return esc(g.meta.unidadNombre); }).join(", ")+' · '+na+' alumno'+(na===1?'':'s') : 'curso vacío: todavía sin grupos')+'</div></div>' +
-    '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">' +
+  var cab = '<div class="acc-title"><h3>'+icon("cal",17)+' Curso escolar <span class="cur-anio">'+esc(ae)+'</span> '+pillEstadoCurso({annoEscolar:ae})+(enPantalla? ' <span class="pill est-vig sm">EN PANTALLA</span>':'')+'</h3>' +
+    '<div class="sub">'+(gs.length? gs.length+' grupo'+(gs.length===1?'':'s')+': '+gs.map(function(g){ return esc(g.meta.unidadNombre); }).join(", ")+' · '+na+' alumno'+(na===1?'':'s') : 'curso vacío: todavía sin grupos')+'</div></div>' +
+    '<div class="acc-meta">' +
     (enPantalla? '' : '<button class="btn btn-sm" data-action="activarCurso" data-ae="'+esc(ae)+'">'+icon("grid",14)+' Trabajar aquí</button>') +
     '<button class="btn btn-sm btn-icon" data-action="eliminarCursoCompleto" data-ae="'+esc(ae)+'" title="Eliminar TODO este curso escolar con todos sus grupos y sus datos (pedirá escribir el año para confirmar)">'+icon("trash",15)+'</button>' +
-    '</div></div>';
+    '</div>';
+  var cuerpo;
   if(!gs.length){
-    h += '<div class="hint">'+icon("info",14)+' Este curso escolar está <b>vacío</b>: sus grupos se crearán al <b>importar su XML de Séneca</b> o al <b>transferir datos desde un curso escolar adyacente</b>.</div></div>';
-    return h;
+    cuerpo = '<div class="hint">'+icon("info",14)+' Este curso escolar está <b>vacío</b>: sus grupos se crearán al <b>importar su XML de Séneca</b> o al <b>transferir datos desde un curso escolar adyacente</b>.</div>';
+    return accSec("cursos", ae, cab, cuerpo);
   }
-  h += '<div class="table-scroll"><table class="users-t"><thead><tr>' +
+  cuerpo = '<div class="table-scroll"><table class="users-t"><thead><tr>' +
     '<th class="chk-cell"><input type="checkbox" class="gSelAll" data-ae="'+esc(ae)+'" title="Marcar todos los grupos de este curso escolar" aria-label="Marcar todos los grupos"></th>' +
     '<th>Grupo</th><th class="col-opt">Enseñanza</th><th class="col-opt">Evaluación</th><th>Alumnos</th><th class="col-opt">Nube</th><th></th></tr></thead><tbody>';
   gs.forEach(function(ds){
     var arch = !!ds.meta.archivado;
     var enNube = !!S.nubeGuardados[ds.key];
-    h += '<tr'+(arch?' style="opacity:.6"':'')+'>' +
+    cuerpo += '<tr'+(arch?' style="opacity:.6"':'')+'>' +
       '<td class="chk-cell"><input type="checkbox" class="gSelChk" data-ae="'+esc(ae)+'" value="'+esc(ds.key)+'" aria-label="Marcar el grupo '+esc(ds.meta.unidadNombre)+'"></td>' +
       '<td><b>'+esc(ds.meta.unidadNombre)+'</b>'+(arch? ' <span class="pill est-arc sm">SOLO LECTURA</span>':'')+'<div class="uuid">'+esc(ds.key)+'</div></td>' +
       '<td class="col-opt">'+esc(ds.meta.cursoGeneral)+'</td>' +
@@ -2382,12 +2448,11 @@ function seccionCurso(ae){
       '<button class="btn btn-sm btn-icon" data-action="'+(arch?"desarchivarCurso":"archivarCurso")+'" data-key="'+esc(ds.key)+'" title="'+(arch?"Desarchivar: vuelve a estar activo y editable":"Archivar: lo protege contra borrado (solo lectura)")+'">'+icon("arch",15)+'</button> ' +
       '<button class="btn btn-sm btn-icon" data-action="pedirEliminarGrupo" data-key="'+esc(ds.key)+'" title="'+(arch?"El grupo está archivado: desarchívalo para poder eliminarlo":"Eliminar este grupo (dispositivo y nube)")+'">'+icon("trash",15)+'</button></td></tr>';
   });
-  h += '</tbody></table></div>';
-  h += '<div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; align-items:center">' +
+  cuerpo += '</tbody></table></div>';
+  cuerpo += '<div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center">' +
     '<button class="btn btn-sm btn-danger" data-action="eliminarGruposMassivo" data-ae="'+esc(ae)+'">'+icon("trash",14)+' <span class="gm-n">Eliminar seleccionados</span></button>' +
     '<span class="media-num">Marca con las casillas los grupos a eliminar en bloque; también puedes eliminarlos uno a uno con su papelera.</span></div>';
-  h += '</div>';
-  return h;
+  return accSec("cursos", ae, cab, cuerpo);
 }
 
 /* ============ VISTA: ADMINISTRACIÓN (solo administradores) ============ */
@@ -2396,30 +2461,30 @@ function renderAdmin(){
   var h = '';
   h += '<div class="pagehead"><div><h2>Administración</h2><div class="sub">Gestión de usuarios y perfiles. La gestión de los cursos escolares tiene su propia sección del menú lateral. Todo cambio se sincroniza automáticamente con la nube.</div></div>' +
        '<div class="head-actions"><button class="btn" data-action="abrirNube">'+icon("cloud")+' Ver nube</button></div></div>';
-  h += '<div class="adm-grid">';
 
-  /* --- Cursos escolares: tienen su propia sección (v2.7) --- */
-  h += '<div class="card card-pad adm-sec"><h3>'+icon("book",17)+' Cursos escolares</h3>' +
+  /* --- Sección-acordeón: Cursos escolares (tienen su propia sección, v2.7) --- */
+  h += accSec("admin","cursos",
+    '<div class="acc-title"><h3>'+icon("book",17)+' Cursos escolares</h3><div class="sub">Crear, generar el próximo año, transferir, archivar y eliminar.</div></div>',
     '<div class="desc">Un <b>curso escolar</b> es un año completo (p. ej. <b>2025/2026</b>) y contiene <b>grupos</b> (p. ej. <b>1º A</b>). La gestión completa —crear, generar el próximo año, transferir entre adyacentes, archivar, eliminar grupos <b>uno a uno o masivamente</b> y eliminar cursos escolares completos con aviso de peligro— está en la sección «Cursos escolares» del menú lateral.</div>' +
     '<button class="btn btn-primary btn-sm" data-action="ir" data-view="cursos">'+icon("book",14)+' Abrir Cursos escolares</button>' +
     '<div class="rule-head" style="margin-top:14px"><b>Atajos</b><div style="display:flex; gap:6px; margin-left:auto; flex-wrap:wrap">' +
     '<button class="btn btn-sm" data-action="nuevoCurso">'+icon("plus",14)+' Nuevo curso escolar</button>' +
-    '<button class="btn btn-sm" data-action="importarClick">'+icon("upload",14)+' Importar XML</button></div></div></div>';
+    '<button class="btn btn-sm" data-action="importarClick">'+icon("upload",14)+' Importar XML</button></div></div>');
 
-  /* --- Usuarios --- */
-  h += '<div class="card card-pad adm-sec"><h3>'+icon("users",17)+' Usuarios y perfiles</h3>' +
+  /* --- Sección-acordeón: Usuarios --- */
+  h += accSec("admin","usuarios",
+    '<div class="acc-title"><h3>'+icon("users",17)+' Usuarios y perfiles</h3><div class="sub">Crear cuentas, cambiar perfiles, restablecer contraseñas.</div></div>',
     '<div class="desc">El acceso es con <b>nombre de usuario y contraseña</b> (sin correo). El perfil <b>usuario</b> solo puede consultar contenido y exportar PDF; el perfil <b>administrador</b> gestiona cursos, importaciones y usuarios. Crea aquí cada cuenta con su contraseña inicial (mínimo 6 caracteres). Usuario admitido: 3-20 caracteres con letras, números, punto, guion o guion bajo.</div>' +
-    '<div id="usuariosTabla"><div class="sin-usuarios">Cargando usuarios…</div></div>';
-  h += '<div class="rule-head" style="margin-top:18px"><b>Añadir usuario nuevo</b></div>' +
+    '<div id="usuariosTabla"><div class="sin-usuarios">Cargando usuarios…</div></div>' +
+    '<div class="rule-head" style="margin-top:18px"><b>Añadir usuario nuevo</b></div>' +
     '<div class="adm-form" style="margin-top:10px">' +
       '<div class="field"><label>Nombre y apellidos</label><input class="inp" id="nuevoNombre" type="text" placeholder="p. ej. Juan Martínez López"></div>' +
       '<div class="field"><label>Nombre de usuario</label><input class="inp" id="nuevoUsuario" type="text" autocapitalize="none" spellcheck="false" placeholder="p. ej. jmartinez"></div>' +
       '<div class="field"><label>Contraseña inicial</label><input class="inp" id="nuevoPass" type="text" placeholder="Mínimo 6 caracteres"></div>' +
       '<div class="field"><label>Perfil</label><select class="inp" id="nuevoRol"><option value="usuario">usuario (solo consulta)</option><option value="administrador">administrador</option></select></div>' +
       '<div class="field"><label>&nbsp;</label><button class="btn btn-primary" data-action="adminCrearUsuario">'+icon("plus",15)+' Crear cuenta</button></div>' +
-    '</div></div>';
+    '</div>');
 
-  h += '</div>';
   return h;
 }
 function cargarUsuariosAdmin(){
@@ -2478,7 +2543,8 @@ function renderAjustes(){
   var h = '';
   h += '<div class="pagehead"><div><h2>Ajustes</h2><div class="sub">Cuenta, conexión con Firebase, instalación y copias de seguridad</div></div></div>';
   /* Cuenta */
-  h += '<div class="card card-pad set-sec"><h3>'+icon("user",17)+' Tu cuenta</h3>' +
+  h += accSec("ajustes","cuenta",
+    '<div class="acc-title"><h3>'+icon("user",17)+' Tu cuenta</h3><div class="sub">Datos de la sesión, contraseña y cierre de sesión.</div></div>',
     '<table class="stats-t"><tbody>' +
     '<tr><td>Usuario</td><td style="text-align:left">@'+esc(p.usuario || "—")+'</td></tr>' +
     '<tr><td>Nombre</td><td style="text-align:left">'+esc(p.nombre || "—")+'</td></tr>' +
@@ -2487,9 +2553,10 @@ function renderAjustes(){
     '</tbody></table>' +
     '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">' +
     '<button class="btn" data-action="cambiarPassDlg">'+icon("key",15)+' Cambiar contraseña</button>' +
-    '<button class="btn btn-danger" data-action="cerrarSesion">'+icon("logout",15)+' Cerrar sesión</button></div></div>';
+    '<button class="btn btn-danger" data-action="cerrarSesion">'+icon("logout",15)+' Cerrar sesión</button></div>');
   /* Conexión */
-  h += '<div class="card card-pad set-sec"><h3>'+icon("cloud",17)+' Conexión con Firebase</h3>' +
+  h += accSec("ajustes","conexion",
+    '<div class="acc-title"><h3>'+icon("cloud",17)+' Conexión con Firebase</h3><div class="sub">Estado de la nube, sincronización y últimos cambios.</div></div>',
     '<div class="desc">Base de datos: Firebase <b>Realtime Database</b> · Ruta exclusiva de esta aplicación: <code>nivelesCompetencialesIESvdv/{centro}/grupos/{curso}</code></div>' +
     '<table class="stats-t"><tbody>' +
     '<tr><td>Proyecto</td><td style="text-align:left">'+esc(cfg.projectId||"—")+'</td></tr>' +
@@ -2502,43 +2569,47 @@ function renderAjustes(){
     '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">' +
     '<button class="btn btn-soft" data-action="sincronizar">'+icon("refresh")+' Sincronizar ahora</button>' +
     '<button class="btn" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar de la nube</button></div>' +
-    '<div class="hint" style="margin-top:10px">La sincronización es <b>automática</b>: cada cambio que hagas (importar, crear, eliminar…) se envía a la nube sin pulsar nada. Si trabajas sin conexión, se encola y se envía al reconectar.</div></div>';
+    '<div class="hint" style="margin-top:10px">La sincronización es <b>automática</b>: cada cambio que hagas (importar, crear, eliminar…) se envía a la nube sin pulsar nada. Si trabajas sin conexión, se encola y se envía al reconectar.</div>');
   /* Configuración editable (admin) */
   if(admin){
-    h += '<div class="card card-pad set-sec"><h3>'+icon("gear",17)+' Configuración de Firebase</h3>' +
+    h += accSec("ajustes","cfg",
+      '<div class="acc-title"><h3>'+icon("gear",17)+' Configuración de Firebase</h3><div class="sub">Cambiar de proyecto Firebase en este dispositivo.</div></div>',
       '<div class="desc">Pega aquí otra configuración (firebaseConfig) si cambias de proyecto. Se guarda solo en este dispositivo.</div>' +
       '<textarea class="inp" id="cfgArea" spellcheck="false">'+esc(JSON.stringify(cfg, null, 2))+'</textarea>' +
       '<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">' +
       '<button class="btn btn-primary btn-sm" data-action="guardarConfig">Guardar configuración</button>' +
-      '<button class="btn btn-sm" data-action="restaurarConfig">Restaurar la del centro</button></div></div>';
+      '<button class="btn btn-sm" data-action="restaurarConfig">Restaurar la del centro</button></div>');
     /* Reglas (admin) */
-    h += '<div class="card card-pad set-sec"><h3>'+icon("shield",17)+' Reglas de seguridad de la base de datos</h3>' +
+    h += accSec("ajustes","reglas",
+      '<div class="acc-title"><h3>'+icon("shield",17)+' Reglas de seguridad de la base de datos</h3><div class="sub">Reglas recomendadas para copiar en Firebase Console.</div></div>',
       '<div class="desc">Copia estas reglas en Firebase Console → Realtime Database → Reglas. Aíslan la app de otras, separan los datos por centro y curso, y aplican los perfiles: <b>usuario</b> = leer, <b>administrador</b> = leer y escribir.</div>' +
       '<div class="hint">Deben estar publicadas junto con el acceso <b>Correo electrónico/contraseña</b> activado en Authentication → Sign-in method (Firebase lo exige aunque el acceso de los profesores sea con nombre de usuario: internamente se usa un identificador técnico).</div>' +
       '<div class="rule-head"><b>Reglas recomendadas (usuarios y roles)</b><button class="btn btn-sm" data-action="copiarReglas" data-cual="auth">'+icon("copy",14)+' Copiar</button></div>' +
-      '<pre class="rules">'+esc(REGLAS_RECOMENDADAS)+'</pre></div>';
+      '<pre class="rules">'+esc(REGLAS_RECOMENDADAS)+'</pre>');
   }
   /* PWA */
   var instalada = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
-  h += '<div class="card card-pad set-sec"><h3>'+icon("install",17)+' Instalar como aplicación (PWA)</h3>' +
+  h += accSec("ajustes","instalar",
+    '<div class="acc-title"><h3>'+icon("install",17)+' Instalar como aplicación (PWA)</h3><div class="sub">Pantalla completa y uso sin conexión en escritorio, tablet o móvil.</div></div>',
     '<div class="desc">Instálala en el escritorio, tablet o móvil para usarla a pantalla completa y sin conexión.</div>' +
     (instalada? '<div class="hint">La aplicación ya está instalada y ejecutándose como app.</div>'
      : ios? '<div class="hint warn">En iPhone/iPad: pulsa <b>Compartir</b> en Safari y elige <b>«Añadir a pantalla de inicio»</b>.</div>'
      : '<div style="display:flex; gap:8px; flex-wrap:wrap"><button class="btn btn-primary" data-action="instalar" '+(puedeInstalar()?"":"disabled")+'>'+icon("install")+' Instalar ahora</button></div>' +
-       (puedeInstalar()? "" : '<div class="hint" style="margin-top:8px">Si el botón está deshabilitado, usa el menú del navegador → «Instalar app» o «Añadir a pantalla de inicio».</div>')) +
-    '</div>';
+       (puedeInstalar()? "" : '<div class="hint" style="margin-top:8px">Si el botón está deshabilitado, usa el menú del navegador → «Instalar app» o «Añadir a pantalla de inicio».</div>')));
   /* Copias de seguridad */
-  h += '<div class="card card-pad set-sec"><h3>'+icon("download",17)+' Copia de seguridad</h3>' +
+  h += accSec("ajustes","backup",
+    '<div class="acc-title"><h3>'+icon("download",17)+' Copia de seguridad</h3><div class="sub">Exportar e importar los grupos en un archivo JSON.</div></div>',
     '<div class="desc">Exporta los grupos guardados en este dispositivo a un archivo JSON (o restáuralos en otro equipo' + (admin?"":", como administrador") + ').</div>' +
     '<div style="display:flex; gap:8px; flex-wrap:wrap">' +
     '<button class="btn" data-action="exportBackup">'+icon("download")+' Exportar JSON</button>' +
     (admin? '<button class="btn" data-action="importBackupClick">'+icon("upload")+' Importar JSON</button>' : "") +
     (admin? '<button class="btn btn-danger" data-action="borrarLocal">'+icon("trash")+' Borrar datos locales</button>' : "") +
-    '</div></div>';
+    '</div>');
   /* Acerca de */
-  h += '<div class="card card-pad set-sec"><h3>'+icon("info",17)+' Acerca de</h3>' +
-    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.7 (sección «Cursos escolares» en el menú lateral; primer curso del centro: 2025/2026; eliminación de cursos escolares completos con aviso de peligro y confirmación escribiendo el año; eliminación de grupos uno a uno o masiva; cursos de cualquier año con transferencia entre adyacentes y archivo) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div></div>';
+  h += accSec("ajustes","acerca",
+    '<div class="acc-title"><h3>'+icon("info",17)+' Acerca de</h3><div class="sub">Perfil Competencial LOMLOE · PWA v2.8.</div></div>',
+    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.8 (todas las secciones de cada pantalla son acordeones desplegables, inicialmente plegados y con una sola sección abierta por pantalla; sección «Cursos escolares» en el menú lateral; primer curso del centro: 2025/2026; eliminación de cursos escolares completos con aviso de peligro y confirmación escribiendo el año; eliminación de grupos uno a uno o masiva; cursos de cualquier año con transferencia entre adyacentes y archivo) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div>');
   return h;
 }
 
@@ -3372,6 +3443,20 @@ var ACTIONS = {
 ACTIONS.imprimirResumen = function(){ imprimir("resumen"); };
 ACTIONS.imprimirAlumno  = function(){ imprimir("alumno"); };
 ACTIONS.imprimirStats   = function(){ imprimir("stats"); };
+/* v2.8: abre/cierra una sección-acordeón. Como el estado por pantalla es un único
+   valor (ACC_ABIERTA[vista]), al abrir una sección se cierra automáticamente la
+   que estuviera abierta: solo hay una desplegada a la vez en cada pantalla. */
+ACTIONS.toggleAcc = function(el){
+  var v = el.dataset.view, k = el.dataset.acc;
+  ACC_ABIERTA[v] = (ACC_ABIERTA[v] === k) ? null : k;
+  renderActual();
+  /* v2.8: tras el re-renderizado se recupera el foco en la misma cabecera
+     (la pantalla se vuelve a pintar entera y el foco se habría perdido) */
+  var heads = document.querySelectorAll('#view-'+v+' .acc-head[data-action="toggleAcc"]');
+  for(var i=0;i<heads.length;i++){
+    if(heads[i].dataset.acc===k){ heads[i].focus(); break; }
+  }
+};
 
 /* ============ DELEGACIÓN DE EVENTOS ============ */
 document.addEventListener("click", function(e){
@@ -3379,6 +3464,12 @@ document.addEventListener("click", function(e){
   if(!el) return;
   var fn = ACTIONS[el.dataset.action];
   if(fn){ e.preventDefault(); fn(el, e); }
+});
+/* v2.8: las cabeceras de los acordeones también responden a Enter o espacio */
+document.addEventListener("keydown", function(e){
+  if(e.key!=="Enter" && e.key!==" ") return;
+  var el = e.target && e.target.closest ? e.target.closest('.acc-head[data-action="toggleAcc"]') : null;
+  if(el){ e.preventDefault(); ACTIONS.toggleAcc(el); }
 });
 document.addEventListener("input", function(e){
   /* Vista previa del estado (vigente/anterior/futuro) al escribir el año del nuevo curso */
@@ -3865,7 +3956,7 @@ window.__app = {
     if(texto.indexOf("\uFFFD")>=0) texto = new TextDecoder("iso-8859-1").decode(buffer);
     return this.importarTextoXML(texto, "buffer.xml");
   },
-  version: "2.7"
+  version: "2.8"
 };
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();
