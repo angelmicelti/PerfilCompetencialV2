@@ -1,7 +1,8 @@
-# Perfil Competencial LOMLOE · PWA (v2.7)
+# Perfil Competencial LOMLOE · PWA (v2.8)
 
 Aplicación web instalable (PWA) para evaluar y analizar el **perfil competencial del alumnado** a partir de los informes **NIVELES_COMPETENCIALES** exportados de **Séneca** (XML). Todo el diseño, la lógica y los estilos están incluidos **dentro de un único `index.html`** (el HTML contiene el CSS y el JavaScript).
 
+- 📂 **Secciones tipo acordeón en todas las pantallas (v2.8)** — Inicio, Resumen, Por competencia, Ficha del alumno, Estadísticas, Cursos escolares, Administración y Ajustes organizan su contenido en **acordeones desplegables**: llegan **inicialmente plegados** (una vista limpia de títulos y resúmenes) y solo puede haber **uno desplegado a la vez en cada pantalla**; funcionan con clic y con teclado (Enter/Espacio), y al recargar la app vuelven a quedar todos plegados
 - 🔐 **Acceso con nombre de usuario y contraseña** — sin correo electrónico (dos perfiles: **usuario** y **administrador**)
 - 🏫 **Sección «Cursos escolares» en el menú lateral (v2.7)** — toda la gestión de cursos reunida en su propia pantalla, con terminología clara: **curso escolar** = un año completo (p. ej. `2025/2026`); **grupo** = una unidad dentro del curso (p. ej. `1º A`)
 - 🗑️ **Eliminar curso escolar completo (v2.7)** — borra un curso escolar **con todos sus grupos, alumnos y niveles**, avisando del peligro y pidiendo **escribir el año de inicio** (p. ej. `2025`) como confirmación; los cursos **archivados** siguen protegidos (hay que desarchivarlos primero)
@@ -60,7 +61,7 @@ En [Firebase Console](https://console.firebase.google.com/) → proyecto `iesvdv
 1. Crea un repositorio en GitHub (por ejemplo `perfil-competencial`), puede ser público o privado.
 2. Sube **todo el contenido de esta carpeta** a la rama principal (`main`): `index.html`, `manifest.json`, `sw.js`, la carpeta `icons/`, `database.rules.json`, `.nojekyll` y este `README.md`.
    - Desde la web: *Add file → Upload files* (arrarra también la carpeta de iconos).
-   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.7" && git push`.
+   - O con git: `git init && git add . && git commit -m "PWA perfil competencial v2.8" && git push`.
 3. En el repositorio: **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** → Branch: **main** / **/(root)** → *Save*.
 4. Espera 1-2 minutos. Tu aplicación estará en:
    `https://TUUSUARIO.github.io/NOMBRE-DEL-REPO/`
@@ -82,6 +83,15 @@ Para actualizar la aplicación basta con subir el nuevo `index.html` (sube tambi
 ---
 
 ## 5. Uso diario
+
+### Secciones tipo acordeón (v2.8)
+
+Todas las pantallas organizan su contenido en **acordeones desplegables**:
+
+- **Inicialmente todo plegado**: al entrar en cualquier pantalla solo se ven las cabeceras de las secciones, con su título, un resumen corto y los datos clave (medias, nº de alumnos, estado…). La pantalla se lee de un vistazo y cada cual despliega lo que necesita.
+- **Una sola sección abierta por pantalla**: al desplegar una sección se pliega automáticamente la que estuviera abierta. Para volver a plegarla, pulsa de nuevo su cabecera.
+- **Qué es una sección en cada pantalla**: *Inicio* → cada grupo del curso (sus datos y acciones se despliegan al pulsar); *Resumen* → «Matriz de competencias» y «Leyenda de niveles»; *Por competencia* → una sección por competencia (8); *Ficha del alumno* → «Perfil competencial» (radar) y una por competencia; *Estadísticas* → Indicadores clave, Radar, Media por competencia, Distribución de niveles y Resumen cuantitativo; *Cursos escolares* → una sección por curso escolar (con «Trabajar aquí» y la papelera siempre visibles en su cabecera); *Administración* y *Ajustes* → una sección por bloque.
+- **Detalles prácticos**: el buscador de la matriz, los borrados y los diálogos funcionan igual que antes; el estado de la sección abierta se mantiene mientras navegas dentro de la misma pantalla (p. ej. al cambiar de alumno o filtrar) y al **recargar la app todo vuelve a estar plegado**. Las cabeceras también responden a **Enter y Espacio**.
 
 ### Sección «Cursos escolares» del menú lateral (v2.7)
 
