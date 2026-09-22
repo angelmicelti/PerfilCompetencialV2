@@ -1,12 +1,15 @@
 /* =====================================================================
    Perfil Competencial LOMLOE · Service Worker (GitHub Pages / hosting)
-   v2.7 · La app es un único index.html (CSS y JS incluidos)
+   v2.9 · La app es un único index.html (CSS y JS incluidos)
    - Precachea el shell completo (todo es local, sin CDNs)
    - Navegaciones: red primero, caché como respaldo (offline)
    - Estáticos: caché primero + actualización en segundo plano
    - Las peticiones a Firebase (cross-origin) pasan directas a la red
+   - IMPORTANTE: en activate solo se borran las cachés propias
+     (perfil-competencial-*). Cache Storage es compartido por origen:
+     borrar "las demás" destruiría la caché de otras PWAs (p. ej. el portal)
    ===================================================================== */
-var VERSION = "perfil-competencial-v2.8";
+var VERSION = "perfil-competencial-v2.9";
 var SHELL = [
   "./",
   "./index.html",
@@ -35,7 +38,9 @@ self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (claves) {
       return Promise.all(claves.map(function (k) {
-        return k === VERSION ? null : caches.delete(k);
+        // Solo borrar cachés de versiones anteriores de ESTA app:
+        // nunca tocar las cachés de otras PWAs del mismo origen
+        return (k !== VERSION && k.indexOf("perfil-competencial-") === 0) ? caches.delete(k) : null;
       }));
     }).then(function () { return self.clients.claim(); })
   );
