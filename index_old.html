@@ -671,7 +671,7 @@ pre.rules{
     <p class="login-sub">Conectando con Firebase</p>
   </div>
 
-  <p class="login-copy">v2.9.1 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
+  <p class="login-copy">v2.8 · PWA · Acceso con usuario y contraseña · Datos en Firebase Realtime Database</p>
 </div>
 
 <!-- ============ APLICACIÓN ============ -->
@@ -1588,103 +1588,6 @@ function sincronizar(silencioso){
     return true;
   });
 }
-/* ============ DESCARGA AUTOMÁTICA DE LA NUBE (v2.9.1) ============
-   Antes la sincronización solo SUBÍA cambios: en un dispositivo nuevo los datos
-   guardados desde otro nunca aparecían (había que bajarlos a mano). Ahora al
-   iniciar sesión, al reconectar o al volver a la app se traen los grupos de la
-   nube con fusión segura:
-   - nunca se pisan los grupos con cambios locales aún sin subir (en cola),
-   - no se reemplaza una copia local más reciente que la de la nube,
-   - se conserva la marca de ARCHIVADO local. */
-var _ultimaDescargaAuto = 0;
-function pendienteLocal(key){
-  return (S.cola||[]).some(function(op){ return op && op.t==="save" && op.key===key; });
-}
-function fusionarDesdeNube(lista){
-  var traidos = 0, nuevos = 0;
-  (lista||[]).forEach(function(g){
-    if(!g || !g.key || !g.meta) return;
-    var prev = S.datasets[g.key];
-    if(prev && pendienteLocal(g.key)) return; /* hay edición local sin subir: no se toca */
-    if(prev && prev.meta){
-      var fPrev = String(prev.meta.fechaCarga||"");
-      var fNube = String(g.meta.fechaCarga||"");
-      if(fNube && fPrev && fNube <= fPrev) return; /* la copia local está al día o es más reciente */
-    }
-    if(prev && prev.meta){
-      /* la marca de ARCHIVADO prevalece aunque llegue otra copia desde la nube */
-      g.meta.archivado = !!prev.meta.archivado;
-      if(prev.meta.fechaArchivo) g.meta.fechaArchivo = prev.meta.fechaArchivo;
-    }
-    S.datasets[g.key] = g;
-    S.nubeGuardados[g.key] = (g.meta && g.meta.fechaCarga) || new Date().toISOString();
-    if(g.meta.codigoCentro) recordarCentro(g.meta.codigoCentro);
-    if(!prev) nuevos++;
-    traidos++;
-  });
-  if(traidos) guardarEstado();
-  return { traidos: traidos, nuevos: nuevos };
-}
-/** Tras traer datos de la nube: si el curso activo está vacío, salta a uno que tenga alumnos */
-function centrarCursoConDatos(lista){
-  var hayDatos = (lista||[]).some(function(g){ return g && g.alumnos && g.alumnos.length; });
-  if(!hayDatos) return;
-  if(S.cursoActivo && gruposDeCurso(S.cursoActivo).some(function(g){ return g.alumnos.length; })) return;
-  var conDatos = cursosDisponibles().filter(function(ae){ return gruposDeCurso(ae).some(function(g){ return g.alumnos.length; }); });
-  if(conDatos.length && S.cursoActivo !== conDatos[conDatos.length-1]){
-    S.cursoActivo = conDatos[conDatos.length-1];
-    var gs = gruposDeCurso(S.cursoActivo);
-    S.activeKey = gs.length ? gs[0].key : null;
-    S.alumnoIdx = 0;
-    guardarEstado();
-  }
-}
-/** Trae los grupos y cursos de la nube y los fusiona (con límite de frecuencia) */
-function descargaAutomatica(forzar){
-  if(!Auth.sesion || !navigator.onLine) return Promise.resolve(false);
-  var ahora = Date.now();
-  if(!forzar && ahora - _ultimaDescargaAuto < 45000) return Promise.resolve(false);
-  _ultimaDescargaAuto = ahora;
-  return nubeListarTodos().then(function(lista){
-    var res = fusionarDesdeNube(lista);
-    return traerCursosDeNube().then(function(){
-      if(!res.traidos){ guardarEstado(); return false; }
-      if(res.nuevos>0) centrarCursoConDatos(lista);
-      asegurarCursoActivo();
-      guardarEstado(); renderActual();
-      toast(res.nuevos
-        ? res.nuevos+" grupo"+(res.nuevos>1?"s":"")+" traído"+(res.nuevos>1?"s":"")+" de la nube"
-        : "Datos actualizados desde la nube","ok");
-      return true;
-    });
-  }).catch(function(){ return false; });
-}
-/* Comprueba que la base de datos NO sea legible sin iniciar sesión (reglas abiertas) */
-var _avisoSeguridadVisto = false;
-function comprobarSeguridadNube(){
-  if(!navigator.onLine) return Promise.resolve(null);
-  var pide = function(ruta){
-    return fetch(rtdbBase()+"/"+ruta+".json").then(function(r){ return r.ok; }).catch(function(){ return false; });
-  };
-  return Promise.all([ pide(DB_ROOT), pide(RUTA_USERS) ]).then(function(res){
-    var nivel = res[1] ? "critico" : (res[0] ? "abierto" : "ok");
-    if(nivel!=="ok" && !_avisoSeguridadVisto){
-      _avisoSeguridadVisto = true;
-      toast("AVISO DE SEGURIDAD: la base de datos es accesible sin iniciar sesión. Publica las reglas (Ajustes → Reglas).","err");
-    }
-    var caja = $("#segNube");
-    if(caja){
-      if(nivel==="critico"){
-        caja.innerHTML = '<div class="peligro">'+icon("alert",16)+'<div><b>ACCESO PÚBLICO DETECTADO.</b> Cualquiera puede leer y escribir la base de datos sin iniciar sesión, incluidos los datos del alumnado y los perfiles con contraseñas. Copia y publica <b>ya</b> las reglas de seguridad del apartado «Reglas» (Firebase Console → Realtime Database → Reglas) y cambia después las contraseñas de los usuarios.</div></div>';
-      }else if(nivel==="abierto"){
-        caja.innerHTML = '<div class="peligro">'+icon("alert",16)+'<div><b>Acceso público detectado.</b> La base de datos puede leerse sin iniciar sesión. Publica las reglas de seguridad del apartado «Reglas» en Firebase Console → Realtime Database → Reglas.</div></div>';
-      }else{
-        caja.innerHTML = '<div class="hint" style="margin-top:10px">'+icon("check",14)+' La base de datos <b>no</b> es accesible sin iniciar sesión: las reglas de seguridad están haciendo su efecto.</div>';
-      }
-    }
-    return nivel;
-  }).catch(function(){ return null; });
-}
 /* Estado de nube para la UI */
 function estadoNube(){
   if(!Auth.sesion) return {cls:"", txt:"Sin sesión"};
@@ -1701,12 +1604,8 @@ function refrescarEstadoNubeUI(){
   if(chip){ chip.className = e.cls; $("#syncTxt").textContent = e.txt; }
   if(pill){ pill.className = "cloudpill "+e.cls; $("#cloudPillTxt").textContent = e.txt; }
 }
-window.addEventListener("online", function(){ sincronizar(true); descargaAutomatica(false); });
+window.addEventListener("online", function(){ sincronizar(true); });
 window.addEventListener("offline", refrescarEstadoNubeUI);
-/* v2.9.1: al volver a la app (pestaña visible de nuevo) también se baja lo cambiado en otros dispositivos */
-document.addEventListener("visibilitychange", function(){
-  if(document.visibilityState==="visible") descargaAutomatica(false);
-});
 
 /* =====================================================================
    auth.js · Sistema de usuarios con dos perfiles — ACCESO POR USUARIO
@@ -1943,10 +1842,6 @@ function flujoPostLogin(msgError){
       renderActual();
       refrescarEstadoNubeUI();
       if(S.cola.length && navigator.onLine) setTimeout(function(){ sincronizar(true); }, 2000);
-      /* v2.9.1: DESCARGA AUTOMÁTICA al entrar — los datos guardados desde otro
-         dispositivo aparecen solos; y comprobación de reglas de seguridad abiertas */
-      setTimeout(function(){ descargaAutomatica(false); }, 800);
-      setTimeout(function(){ comprobarSeguridadNube(); }, 2500);
       return perfil;
     });
   }).catch(function(e){
@@ -2092,7 +1987,6 @@ function sinDatos(titulo, texto){
   var admin = Auth.esAdmin();
   var acciones = admin
     ? '<button class="btn btn-primary" data-action="importarClick">'+icon("upload")+' Importar XML de Séneca</button>' +
-      '<button class="btn btn-soft" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar de la nube</button>' +
       '<button class="btn btn-soft" data-action="nuevoCurso">'+icon("plus")+' Crear curso escolar</button>'
     : '<button class="btn btn-primary" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar grupos desde la nube</button>';
   return '<div class="card"><div class="empty-hero">' +
@@ -2149,9 +2043,8 @@ function renderInicio(){
     h += '<div class="card"><div class="empty-hero">' +
       '<div class="big">'+icon("book",40)+'</div>' +
       '<h2 style="font-size:20px">El curso escolar '+esc(ae)+' está vacío</h2>' +
-      '<p style="color:var(--muted); margin:0; font-size:13.5px">Sus grupos aparecerán aquí cuando importes el XML de Séneca de ese año, transfieras datos desde un curso adyacente o los traigas de la nube. Cada curso es un compartimento aislado: nada se mezcla.</p>' +
+      '<p style="color:var(--muted); margin:0; font-size:13.5px">Sus grupos aparecerán aquí cuando importes el XML de Séneca de ese año o transfieras datos desde un curso escolar adyacente. Cada curso es un compartimento aislado: nada se mezcla.</p>' +
       (admin? '<button class="btn btn-primary" data-action="importarClick">'+icon("upload")+' Importar XML de Séneca</button>' : '') +
-      '<button class="btn '+(admin?"btn-soft":"btn-primary")+'" data-action="descargarDeNube">'+icon("cloudDown")+' Traer datos de la nube</button>' +
       '</div></div>';
     return h;
   }
@@ -2676,8 +2569,7 @@ function renderAjustes(){
     '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">' +
     '<button class="btn btn-soft" data-action="sincronizar">'+icon("refresh")+' Sincronizar ahora</button>' +
     '<button class="btn" data-action="descargarDeNube">'+icon("cloudDown")+' Descargar de la nube</button></div>' +
-    '<div class="hint" style="margin-top:10px">La sincronización es <b>automática en ambos sentidos</b>: cada cambio que hagas (importar, crear, eliminar…) se sube a la nube sin pulsar nada y, al entrar en la aplicación o al volver a ella, también se bajan los cambios hechos desde otros dispositivos. Si trabajas sin conexión, se encola y se envía al reconectar.</div>' +
-    '<div id="segNube" style="margin-top:10px"></div>');
+    '<div class="hint" style="margin-top:10px">La sincronización es <b>automática</b>: cada cambio que hagas (importar, crear, eliminar…) se envía a la nube sin pulsar nada. Si trabajas sin conexión, se encola y se envía al reconectar.</div>');
   /* Configuración editable (admin) */
   if(admin){
     h += accSec("ajustes","cfg",
@@ -2716,10 +2608,8 @@ function renderAjustes(){
     '</div>');
   /* Acerca de */
   h += accSec("ajustes","acerca",
-    '<div class="acc-title"><h3>'+icon("info",17)+' Acerca de</h3><div class="sub">Perfil Competencial LOMLOE · PWA v2.9.1.</div></div>',
-    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.9.1 (descarga automática de la nube al iniciar sesión, al reconectar y al volver a la app: los datos guardados en un dispositivo aparecen solos en los demás; aviso automático si las reglas de seguridad de Firebase están abiertas; todas las secciones de cada pantalla son acordeones desplegables, inicialmente plegados y con una sola sección abierta por pantalla; sección «Cursos escolares» en el menú lateral; primer curso del centro: 2025/2026; eliminación de cursos escolares completos con aviso de peligro y confirmación escribiendo el año; eliminación de grupos uno a uno o masiva; cursos de cualquier año con transferencia entre adyacentes y archivo) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div>');
-  /* Conexión con Firebase: comprobación de reglas abiertas al abrir Ajustes */
-  setTimeout(comprobarSeguridadNube, 60);
+    '<div class="acc-title"><h3>'+icon("info",17)+' Acerca de</h3><div class="sub">Perfil Competencial LOMLOE · PWA v2.8.</div></div>',
+    '<div class="desc" style="margin-bottom:0">Perfil Competencial LOMLOE · PWA v2.8 (todas las secciones de cada pantalla son acordeones desplegables, inicialmente plegados y con una sola sección abierta por pantalla; sección «Cursos escolares» en el menú lateral; primer curso del centro: 2025/2026; eliminación de cursos escolares completos con aviso de peligro y confirmación escribiendo el año; eliminación de grupos uno a uno o masiva; cursos de cualquier año con transferencia entre adyacentes y archivo) · Evaluación a partir de informes Séneca (NIVELES_COMPETENCIALES). Los datos se guardan en vuestro proyecto Firebase, aislados por nodo de aplicación, centro y curso escolar, con perfiles de usuario y sincronización automática. Sin servidores intermedios.</div>');
   return h;
 }
 
@@ -3386,7 +3276,6 @@ var ACTIONS = {
       if(!lista.length){ toast("No hay grupos guardados en la nube todavía","warn"); return; }
       lista.forEach(function(g){ if(g && g.key) S.nubeGuardados[g.key] = (g.meta && g.meta.fechaCarga) || new Date().toISOString(); });
       importarDatasets(lista);
-      centrarCursoConDatos(lista);
       guardarEstado(); renderActual();
       toast(lista.length+" grupo"+(lista.length>1?"s":"")+" descargado"+(lista.length>1?"s":"")+" de la nube","ok");
       /* v2.6: trae también el registro de cursos escolares creados vacíos */
@@ -3424,10 +3313,8 @@ var ACTIONS = {
     });
   },
   sincronizar: function(){
-    /* v2.9.1: bidireccional — sube los cambios pendientes Y baja lo nuevo de la nube */
-    if(Auth.esAdmin()) sincronizar(false);
-    toast("Sincronizando con la nube…");
-    descargaAutomatica(true).then(function(){ if($("#nubeBody")) refrescarNubeDlg(null); });
+    if(!Auth.esAdmin()){ toast("Tu perfil solo consulta; no hay cambios que enviar","warn"); return; }
+    sincronizar(false).then(function(ok){ if(ok && $("#nubeBody")) refrescarNubeDlg(null); });
   },
 
   /* --- Navegación y detalles --- */
@@ -4069,7 +3956,7 @@ window.__app = {
     if(texto.indexOf("\uFFFD")>=0) texto = new TextDecoder("iso-8859-1").decode(buffer);
     return this.importarTextoXML(texto, "buffer.xml");
   },
-  version: "2.9.1"
+  version: "2.8"
 };
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();

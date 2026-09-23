@@ -1,6 +1,6 @@
 /* =====================================================================
    Perfil Competencial LOMLOE · Service Worker (GitHub Pages / hosting)
-   v2.9 · La app es un único index.html (CSS y JS incluidos)
+   v2.9.1 · La app es un único index.html (CSS y JS incluidos)
    - Precachea el shell completo (todo es local, sin CDNs)
    - Navegaciones: red primero, caché como respaldo (offline)
    - Estáticos: caché primero + actualización en segundo plano
@@ -9,7 +9,7 @@
      (perfil-competencial-*). Cache Storage es compartido por origen:
      borrar "las demás" destruiría la caché de otras PWAs (p. ej. el portal)
    ===================================================================== */
-var VERSION = "perfil-competencial-v2.9";
+var VERSION = "perfil-competencial-v2.9.1";
 var SHELL = [
   "./",
   "./index.html",
